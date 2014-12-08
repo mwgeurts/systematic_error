@@ -1,0 +1,7 @@
+GPU/
+ganymed-ssh2-build250/
+ssh2_v2_m1_r5/
+.DS_STORE
+*.m~
+log.txt
+
