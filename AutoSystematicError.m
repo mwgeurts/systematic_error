@@ -49,9 +49,12 @@ function AutoSystematicError()
 % in the following format. The name for each .csv file follows the
 % convention 'planuid_calc.csv', where planuid is the Plan UID and calc is
 % either 'reference' or the name of the modification (see below for a full
-% list of modifications)
-%
-% ...
+% list of modifications). The first row contains the file name, the second 
+% row contains column headers for each structure set (including the volume
+% in cc in parentheses), with each subsequent row containing the percent
+% volume of each structure at or above the dose specified in the first
+% column (in Gy).  The resolution is determined by dividing the maximum
+% dose by 1001.
 %
 % The metricDir contains a .csv file for each metric computed below in the
 % following columns, where the first row contains a list of each plan
@@ -106,7 +109,7 @@ version = '1.0.0';
 versionInfo = LoadVersionInfo;
 
 % Store program and MATLAB/etc version information as a string cell array
-string = {'TomoTherapy Systematic Error Simulation Tool'
+string = {'TomoTherapy FMEA Simulation Tool'
     sprintf('Version: %s (%s)', version, versionInfo{6});
     sprintf('Author: Mark Geurts <mark.w.geurts@gmail.com>');
     sprintf('MATLAB Version: %s', versionInfo{2});
@@ -158,7 +161,7 @@ else
     fid = fopen(resultsCSV, 'w');
     
     % Print version information
-    fprintf(fid, '# TomoTherapy Systematic Error Simulation Tool\n');
+    fprintf(fid, '# TomoTherapy FMEA Simulation Tool\n');
     fprintf(fid, '# Author: Mark Geurts <mark.w.geurts@gmail.com>\n');
     fprintf(fid, ['# See AutoSystematicError.m and README.md for ', ...
         'more information on the format of this results file\n']);
@@ -473,8 +476,9 @@ while i < size(folderList, 1)
                         [0 0 0 0 0 0], ssh2);
                     
                     % Write reference DVH to .csv file
-                    WriteDVH(fullfile(dvhDir, strcat(approvedPlans{j}, ...
-                        '_reference.csv')), referenceImage, referenceDose);
+                    WriteDVH(referenceImage, referenceDose, fullfile(...
+                        dvhDir, strcat(approvedPlans{j}, ...
+                        '_reference.csv')));
                     
                     % Initialize 2D plan metrics storage array (initialize
                     % with -1)
@@ -576,9 +580,9 @@ while i < size(folderList, 1)
                             [0 0 0 0 0 0], ssh2);
                         
                         % Write modified DVH to .csv file
-                        WriteDVH(fullfile(dvhDir, strcat(approvedPlans{j}, ...
-                            '_',modifications{k,1},'.csv')), ...
-                            referenceImage, modDose);
+                        WriteDVH(referenceImage, modDose, fullfile(dvhDir, ...
+                            strcat(approvedPlans{j}, '_', ...
+                            modifications{k,1}, '.csv')));
                         
                         % Loop through plan metrics, computing modified 
                         % value
