@@ -231,9 +231,9 @@ Event('Loading plan metric functions');
 % category is empty, all categories will be calculated
 metrics = {
     'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
-%    'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
-%    'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
-%    'targetdx95'    'CalcStructureStat' 'PTV/D95'    ''
+    'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
+    'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
+    'targetdx95'    'CalcStructureStat' 'PTV/D95'    ''
 };
 
 % Loop through each metric
