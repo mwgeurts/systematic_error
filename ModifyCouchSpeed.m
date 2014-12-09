@@ -9,7 +9,7 @@ function plan = ModifyCouchSpeed(plan, percent)
 %   percent: a number (or string) indicating the percent deviation in couch
 %       speed to apply.
 %
-% The following variables are returned upon succesful completion:
+% The following variable is returned upon succesful completion:
 %   plan: a structure, of the same format as the input delivery plan, with
 %       the modified couch speed.
 %
@@ -35,6 +35,9 @@ if ~isnumeric(percent)
     percent = str2double(percent);
     
 end
+
+% Log event
+Event(sprintf('Adjusting couch speed by %0.2f%%', percent));
 
 % Loop through delivery plan events
 for i = 1:size(plan.events, 1)
