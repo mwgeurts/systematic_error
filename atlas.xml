@@ -8,8 +8,15 @@
       <dx>90</dx>
    </structure>
    <structure>
-      <name>PTV/ITV</name>
-      <include>ptv|itv</include>
+      <name>PTV</name>
+      <include>ptv</include>
+      <exclude>planning|-|+</exclude>
+      <load>1</load>
+      <dx>90</dx>
+   </structure>
+   <structure>
+      <name>ITV</name>
+      <include>itv</include>
       <exclude>planning|-|+</exclude>
       <load>1</load>
       <dx>90</dx>
