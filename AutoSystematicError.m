@@ -195,10 +195,10 @@ Event('Loading plan modification functions');
 % third is optional arguments passed to the function. Multiple arguments 
 % can be separated by a forward slash (/).
 modifications = {
-    'mlc32open'     'ModifyMLCLeafOpen' '32'
-    'mlc42open'     'ModifyMLCLeafOpen' '42'
-    'mlcrand2pct'   'ModifyMLCRandom'   '2'
-    'mlcrand4pct'   'ModifyMLCRandom'   '4'
+%    'mlc32open'     'ModifyMLCLeafOpen' '32'
+%    'mlc42open'     'ModifyMLCLeafOpen' '42'
+%    'mlcrand2pct'   'ModifyMLCRandom'   '2'
+%    'mlcrand4pct'   'ModifyMLCRandom'   '4'
     'couch+0.5pct'  'ModifyCouchSpeed'  '0.5'
     'couch+1.0pct'  'ModifyCouchSpeed'  '1.0'
 };
@@ -230,9 +230,9 @@ Event('Loading plan metric functions');
 % category is empty, all categories will be calculated
 metrics = {
     'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
-    'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
-    'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
-    'targetdx95'    'CalcStructureStat' 'Target/d95'    ''
+%    'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
+%    'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
+%    'targetdx95'    'CalcStructureStat' 'Target/d95'    ''
 };
 
 % Loop through each metric
