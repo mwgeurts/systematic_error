@@ -34,13 +34,14 @@ function AutoSystematicError()
 % ...
 %
 % The metricDir contains a .csv file for each metric computed below in the
-% following format.  The first row contains a list of each plan
-% modification (see below for a full list of modifications or 'reference' 
-% for the unmodified plan.  The first column contains the plan UID, the 
-% second contains the metric for the reference plan, and each subsequent 
-% column contains the metric for the modified calculated dose.
+% following columns, where the first row contains a list of each plan
+% modification (see below for a full list of modifications):
+%   {1}: Plan UID
+%   {2}: Atlas category
+%   {3}: Metric for the reference plan dose
+%   {3+n}: Metrics for all n plan modifications
 %
-% Copyright (C) 2015 University of Wisconsin Board of Regents
+% Copyright (C) 2014 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
 % under the terms of the GNU General Public License as published by the  
@@ -306,9 +307,6 @@ while i < size(folderList, 1)
         % Search for and load all approvedPlans in the archive
         approvedPlans = FindPlans(path, strcat(name, ext));
         
-        % Clear temporary variables
-        clear path name ext;
-        
         % Loop through each registered daily image
         Event('Looping through each approved plan');
         for j = 1:size(approvedPlans, 2)
@@ -371,6 +369,9 @@ while i < size(folderList, 1)
                     ' skipped as results were found in ', resultsCSV]);
             end
         end
+        
+        % Clear temporary variables
+        clear path name ext;
     end 
 end
 
