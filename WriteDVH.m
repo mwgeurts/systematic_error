@@ -177,7 +177,8 @@ if nargin == 3
     if fid > 0
         
         % Write the file name in the first row
-        fprintf(fid, ',%s\n', varargin{3});
+        [~, file, ext] = fileparts(varargin{3});
+        fprintf(fid, ',%s\n', strcat(file, ext));
         
         % Write the structure names and volumes in the second row
         for i = 1:size(varargin{1}.structures, 2)
@@ -188,13 +189,13 @@ if nargin == 3
         fprintf(fid, '\n');
         
         % Circshift dvh to place dose in first column
-        dvh = circshift(dvh, [0 1]);
+        dvh = circshift(dvh, [0 1])';
         
         % Write dvh contents to file
-        fprintf(fid, [repmat('%g,', 1, size(dvh,2)), '\n'], dvh);
+        fprintf(fid, [repmat('%g,', 1, size(dvh,1)), '\n'], dvh);
         
         % Close file handle
-        close(fid);
+        fclose(fid);
         
     % Otherwise MATLAB couldn't open a write handle
     else
@@ -209,7 +210,7 @@ Event(sprintf(['Dose volume histograms completed successfully in ', ...
     '%0.3f seconds'], toc));
 
 % Clear temporary variables
-clear i dvh fid;
+clear i dvh fid file ext;
 
 % Catch errors, log, and rethrow
 catch err

@@ -1,7 +1,7 @@
 function deliveryPlans = FindPlans(path, name)
 % FindPlans loads all delivery plan trial UIDs from a specified TomoTherapy 
-% patient archive. This function has currently been validated for version 
-% 4.X and 5.X patient archives.
+% patient archive. Only Helical, non-DQA plans are returned. This function 
+% has currently been validated for version 4.X and 5.X patient archives.
 %
 % The following variables are required for proper execution: 
 %   path: path to the patient archive XML file
@@ -72,9 +72,51 @@ for i = 1:nodeList.getLength
     % If no approved plan trial UID was found, continue to next result
     if subnodeList.getLength == 0
         continue
-        
+    end
+    
+    % Retrieve a handle to the results
+    subnode = subnodeList.item(0);
+    
     % Otherwise, if approved plan trial UID is empty, continue
-    elseif strcmp(char(subnode.getFirstChild.getNodeValue), '')
+    if strcmp(char(subnode.getFirstChild.getNodeValue), '')
+        continue
+    end
+    
+    % Search for plan delivery type
+    subexpression = xpath.compile('planDeliveryType');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+
+    % If plan delivery type was found, continue to next result
+    if subnodeList.getLength == 0
+        continue
+    end
+    
+    % Retrieve a handle to the results
+    subnode = subnodeList.item(0);
+    
+    % Otherwise, if approved plan delivery type is not Helical, continue
+    if ~strcmp(char(subnode.getFirstChild.getNodeValue), 'Helical')
+        continue
+    end
+    
+    % Search for plan type
+    subexpression = xpath.compile('typeOfPlan');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+
+    % If plan type was found, continue to next result
+    if subnodeList.getLength == 0
+        continue
+    end
+    
+    % Retrieve a handle to the results
+    subnode = subnodeList.item(0);
+    
+    % Otherwise, if plan type is not PATIENT, continue
+    if ~strcmp(char(subnode.getFirstChild.getNodeValue), 'PATIENT')
         continue
     end
     

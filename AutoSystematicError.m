@@ -31,7 +31,8 @@ function AutoSystematicError()
 % Similarly, metrics are computed by executing an feval call to the
 % function name specified in the variable metrics:
 %
-%   metric = feval(metrics{i,2}, image, refDose, modDose, metrics{i,3}); 
+%   metric = feval(metrics{i,2}, image, refDose, modDose, altas, ...
+%       metrics{i,3}); 
 %
 % The resultsCSV file contains the following columns:
 %   {1}: Full path to patient archive _patient.xml.  However, if 
@@ -89,8 +90,8 @@ warning('off','all');
 anon = false;
 
 % Set the input directory.  This directory will be scanned for patient
-% archives during execution of AutoDIGRT
-inputDir = '/media/mgeurts/My Book/Study_Data/';
+% archives during execution of AutoSystematicError
+inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/';
 
 % Set the .csv file where the results summary will be appended
 resultsCSV = '../Study_Results/Results.csv';
@@ -232,7 +233,7 @@ metrics = {
     'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
 %    'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
 %    'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
-%    'targetdx95'    'CalcStructureStat' 'Target/d95'    ''
+%    'targetdx95'    'CalcStructureStat' 'PTV/D95'    ''
 };
 
 % Loop through each metric
@@ -267,7 +268,7 @@ for i = 1:size(metrics, 1)
         fprintf(fid, 'Reference,');
         
         % Loop through each plan modification
-        for j = 1:size(modifications, 2)
+        for j = 1:size(modifications, 1)
             fprintf(fid, '%s,', modifications{j,1});
         end
         fprintf(fid, '\n');
@@ -482,11 +483,11 @@ while i < size(folderList, 1)
                     
                     % Initialize 2D plan metrics storage array (initialize
                     % with -1)
-                    planMetrics = zeros(size(metrics,2), ...
-                        size(modifications,2)+1) - 1;
+                    planMetrics = zeros(size(metrics,1), ...
+                        size(modifications,1)+1) - 1;
                     
                     % Loop through plan metrics, computing reference value
-                    for k = 1:size(metrics, 2)
+                    for k = 1:size(metrics, 1)
                        
                         % If category is empty, or if it exists in the
                         % metric's category list
@@ -499,7 +500,7 @@ while i < size(folderList, 1)
                                 % Execute metric with no additional args
                                 planMetrics(k, 1) = feval(metrics{k,2}, ...
                                     referenceImage, referenceDose, ...
-                                    referenceDose);
+                                    referenceDose, atlas);
                             else
                                 % Split metric arguments using / delimiter
                                 str = strsplit(metrics{k,3}, '/');
@@ -510,18 +511,19 @@ while i < size(folderList, 1)
                                     % Execute metric with 1 additional arg
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         referenceImage, referenceDose, ...
-                                        referenceDose, str(1));
+                                        referenceDose, atlas, str(1));
                                 case 2
                                     % Execute metric with 2 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         referenceImage, referenceDose, ...
-                                        referenceDose, str(1), str(2));
+                                        referenceDose, atlas, str(1), ...
+                                        str(2));
                                 case 3
                                     % Execute metric with 3 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         referenceImage, referenceDose, ...
-                                        referenceDose, str(1), str(2), ...
-                                        str(3));
+                                        referenceDose, atlas, str(1), ...
+                                        str(2), str(3));
                                 otherwise
                                     % Otherwise throw an error
                                     Event('Too many arguments for feval', ...
@@ -538,7 +540,7 @@ while i < size(folderList, 1)
                     clear k;
                     
                     % Loop through plan modifications
-                    for k = 1:size(modifications, 2)
+                    for k = 1:size(modifications, 1)
                         
                         % If no additional arguments are included
                         if isempty(modifications{k,3})
@@ -555,15 +557,15 @@ while i < size(folderList, 1)
                             switch length(str)
                             case 1
                                 % Execute metric with 1 additional arg
-                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                modPlan = feval(modifications{k,2}, ...
                                     planData, str(1));
                             case 2
                                 % Execute metric with 2 additional args
-                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                modPlan = feval(modifications{k,2}, ...
                                     planData, str(1), str(2));
                             case 3
                                 % Execute metric with 3 additional args
-                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                modPlan = feval(modifications{k,2}, ...
                                     planData, str(1), str(2), str(3));
                             otherwise
                                 % Otherwise throw an error
@@ -586,7 +588,7 @@ while i < size(folderList, 1)
                         
                         % Loop through plan metrics, computing modified 
                         % value
-                        for n = 1:size(metrics, 2)
+                        for n = 1:size(metrics, 1)
 
                             % If category is empty, or if it exists in the
                             % metric's category list
@@ -600,7 +602,7 @@ while i < size(folderList, 1)
                                     % args
                                     planMetrics(n, k+1) = feval(...
                                         metrics{n,2}, referenceImage, ...
-                                        modDose, referenceDose);
+                                        modDose, referenceDose, atlas);
                                 else
                                     % Split metric arguments using / 
                                     % delimiter
@@ -614,21 +616,21 @@ while i < size(folderList, 1)
                                         planMetrics(n, k+1) = feval(...
                                             metrics{n,2}, referenceImage, ...
                                             modDose, referenceDose, ...
-                                            str(1));
+                                            atlas, str(1));
                                     case 2
                                         % Execute metric with 2 additional 
                                         % args
                                         planMetrics(n, k+1) = feval(...
                                             metrics{n,2}, referenceImage, ...
                                             modDose, referenceDose, ...
-                                            str(1), str(2));
+                                            atlas, str(1), str(2));
                                     case 3
                                         % Execute metric with 3 additional 
                                         % args
                                         planMetrics(n, k+1) = feval(...
                                             metrics{n,2}, referenceImage, ...
                                             modDose, referenceDose, ...
-                                            str(1), str(2), str(3));
+                                            atlas, str(1), str(2), str(3));
                                     otherwise
                                         % Otherwise throw an error
                                         Event(['Too many arguments for ', ...
@@ -646,11 +648,11 @@ while i < size(folderList, 1)
                     end
                 
                     % Loop thorugh each metric, writing results
-                    for k = 1:size(metrics, 2)
+                    for k = 1:size(metrics, 1)
                         
                         % Open append file handle to metric result
                         fid = fopen(fullfile(metricDir, ...
-                            strcat(metrics{i,1}, '.csv')), 'a');
+                            strcat(metrics{k, 1}, '.csv')), 'a');
                         
                         % Write metric results
                         fprintf(fid, '%s,', approvedPlans{j});
@@ -658,7 +660,7 @@ while i < size(folderList, 1)
                         fprintf(fid, '\n');
                         
                         % Close file handle
-                        close(fid);
+                        fclose(fid);
                     end
                     
                     % Open append file handle to results .csv
@@ -689,10 +691,10 @@ while i < size(folderList, 1)
                         size(referenceImage.structures, 2));
                     
                     % Write the number of plan modifications in column 6
-                    fprintf(fid, '%i,', size(modifications, 2));
+                    fprintf(fid, '%i,', size(modifications, 1));
                     
                     % Write the number of metrics in column 7
-                    fprintf(fid, '%i,', size(metrics, 2));
+                    fprintf(fid, '%i,', size(metrics, 1));
                     
                     % Write the plan run time in column 8
                     fprintf(fid, '%f,', toc(planTimer));
@@ -701,7 +703,7 @@ while i < size(folderList, 1)
                     fprintf(fid, '%s\n', version);
                     
                     % Close file handle
-                    close(fid);
+                    fclose(fid);
                     
                     % Clear temporary variables
                     clear fid k planTimer planMetrics category;
@@ -721,7 +723,7 @@ while i < size(folderList, 1)
                 end
             else
                 % Otherwise, matching data was found in resultsCSV
-                Event(['UID ', approvedPlans{j}.UID, ...
+                Event(['UID ', approvedPlans{j}, ...
                     ' skipped as results were found in ', resultsCSV]);
             end
         end

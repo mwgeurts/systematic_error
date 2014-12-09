@@ -1,4 +1,4 @@
-function metric = CalcGammaMetric(~, refDose, newDose, percent, dta)
+function metric = CalcGammaMetric(~, refDose, newDose, ~, percent, dta)
 % CalcGammaMetric is a metric plugin for the TomoTherapy FMEA simulation 
 % tool and computes the Gamma Index between the new and reference dose
 % using the CalcGamma submodule.  For more information on the methods used
@@ -13,6 +13,10 @@ function metric = CalcGammaMetric(~, refDose, newDose, percent, dta)
 %       CalcDose for more information on the format of this object.
 %   newDose: structure containing the calculated new/modified dose. See 
 %       CalcDose for more information on the format of this object.
+%   atlas: cell array of atlas structures with the following fields: name,
+%       include, exclude, load, dx, and category. See LoadAtlas for more
+%       information on the structure of this array. This variable is not
+%       currently used but the placeholder exists for future use.
 %   percent: a number (or string) indicating the Gamma absolute criterion 
 %       percentage
 %   dta: a number (or string) indicating the Gamma Distance To Agreement 
@@ -79,7 +83,7 @@ gamma = CalcGamma(refDose, newDose, percent, dta, local, maxdose, ...
     restrictSearch);
 
 % Remove voxels where dose is less than threshold
-gamma = gamma .* ceil(refDose/maxdose - threshold);
+gamma = gamma .* ceil(refDose.data/maxdose - threshold);
 
 % Initialize the gammahist temporary variable to compute the gamma pass 
 % rate, by reshaping gamma to a 1D vector
