@@ -13,6 +13,26 @@ function AutoSystematicError()
 % In this manner, AutoSystematicError can be run multiple times to analyze 
 % a large directory of archives.
 %
+% Each modification is computed by executing an feval call to the function
+% name specified in the variable modifications.  The function will be
+% called with multiple input arguments, as shown below where str is a
+% variable number ('/' delimited) of input arguments stored in 
+% modifications{i,3}. The return variable must be the modified delivery 
+% plan:
+%
+%   modPlan = feval(modifications{i,2}, referencePlan, modifications{i,3});
+%
+% If multiple '/' delimited arguments exist, they will be called as
+% separate arguments in feval, as shown below for two arguments:
+%
+%   str = strsplit(modifications{i,3}, '/');
+%   modPlan = feval(modifications{i,2}, referencePlan, str(1), str(2));
+%
+% Similarly, metrics are computed by executing an feval call to the
+% function name specified in the variable metrics:
+%
+%   metric = feval(metrics{i,2}, image, refDose, modDose, metrics{i,3}); 
+%
 % The resultsCSV file contains the following columns:
 %   {1}: Full path to patient archive _patient.xml.  However, if 
 %       the variable anon is set to TRUE, will be empty.
@@ -107,11 +127,12 @@ Event(string, 'INIT');
 clear string separator;
 
 %% Load Results .csv
-% Open file handle to current results set
-fid = fopen(resultsCSV,'r');
+% Open file handle to current results .csv set
+fid = fopen(resultsCSV, 'r');
 
 % If a valid file handle was returned
 if fid > 0
+    
     % Log loading of existing results
     Event('Found results file');
     
@@ -129,6 +150,7 @@ if fid > 0
 
 % Otherwise, create new results file, saving column headers
 else
+    
     % Log generation of new file
     Event(['Generating new results file ', resultsCSV]);
     
@@ -167,7 +189,8 @@ Event('Loading plan modification functions');
 
 % Declare modification cell array. The first column is the shorthand
 % description of the modification, the second is the function name, and the
-% third is an optional argument passed to the function
+% third is optional arguments passed to the function. Multiple arguments 
+% can be separated by a forward slash (/).
 modifications = {
     'mlc32open'     'ModifyMLCLeafOpen' '32'
     'mlc42open'     'ModifyMLCLeafOpen' '42'
@@ -186,6 +209,9 @@ for i = 1:size(modifications, 1)
             modifications{i,2}), 'ERROR');
     end
 end
+
+% Clear temporary variable
+clear i;
   
 % Log number of modifications loaded
 Event(sprintf('%i functions successfully loaded', size(modifications, 1)));
@@ -195,10 +221,9 @@ Event('Loading plan metric functions');
 
 % Declare metric cell array. The first column is the shorthand
 % description of the metric, the second is the function name, the third is 
-% an optional arguments passed to the function, and the fourth is a list of 
+% optional arguments passed to the function, and the fourth is a list of 
 % atlas categories for which the metric should be calculated.  Multiple
-% arguments can be separated by a forward slash (/).
-If the atlas
+% arguments can be separated by a forward slash (/). If the atlas
 % category is empty, all categories will be calculated
 metrics = {
     'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
@@ -215,10 +240,81 @@ for i = 1:size(metrics, 1)
         Event(sprintf('Metric calculation function %s not found', ...
             metrics{i,2}), 'ERROR');
     end
+    
+    % Open file handle to current metric .csv data
+    fid = fopen(fullfile(metricDir, strcat(metrics{i,1}, '.csv')), 'r');
+    
+    % If a valid file handle was returned
+    if fid > 0
+
+        % Log loading of existing results
+        Event(sprintf('Found metric file %s.csv', metrics{i,1}));
+    
+    % Otherwise, create new results file, saving column headers
+    else
+        % Log generation of new file
+        Event(['Generating new results file ', resultsCSV]);
+
+        % Open write file handle to metric .csv
+        fid = ...
+            fopen(fullfile(metricDir, strcat(metrics{i,1}, '.csv')), 'w');
+        
+        % Print column headers
+        fprintf(fid, 'Plan UID,');
+        fprintf(fid, 'Reference,');
+        
+        % Loop through each plan modification
+        for j = 1:size(modifications, 2)
+            fprintf(fid, '%s,', modifications{j,1});
+        end
+        fprintf(fid, '\n');
+
+        % Close the file handle
+        fclose(fid);
+    end
+    
+    % Clear temporary variables
+    clear fid;
 end
+
+% Clear temporary variables
+clear i j;
 
 % Log number of modifications loaded
 Event(sprintf('%i functions successfully loaded', size(metrics, 1)));
+
+%% Load SSH/SCP Scripts
+% A try/catch statement is used in case Ganymed-SSH2 is not available
+try
+    
+    % Load Ganymed-SSH2 javalib
+    Event('Adding Ganymed-SSH2 javalib');
+    addpath('../ssh2_v2_m1_r6/'); 
+    Event('Ganymed-SSH2 javalib added successfully');
+    
+    % Establish connection to computation server.  The ssh2_config
+    % parameters below should be set to the DNS/IP address of the
+    % computation server, user name, and password with SSH/SCP and
+    % read/write access, respectively.  See the README for more infomation
+    Event('Connecting to tomo-research via SSH2');
+    ssh2 = ssh2_config('tomo-research', 'tomo', 'hi-art');
+    
+    % Test the SSH2 connection.  If this fails, catch the error below.
+    [ssh2, ~] = ssh2_command(ssh2, 'ls');
+    Event('SSH2 connection successfully established');
+
+% addpath, ssh2_config, or ssh2_command may all fail if ganymed is not
+% available or if the remote server is not responding
+catch err
+    
+    % Log failure
+    Event(getReport(err, 'extended', 'hyperlinks', 'off'), 'ERROR');
+  
+end
+
+%% Add CalcGamma submodule
+% Add gamma submodule to search path
+addpath('./gamma');
 
 %% Start scanning for archives
 % Note beginning execution
@@ -237,7 +333,7 @@ folderList = folderList(randperm(size(folderList, 1)), :);
 % Initialize folder counter
 i = 0;
 
-% Initialize daily image counter
+% Initialize plan counter
 count = 0;
 
 % Start AutoSystematicError timer
@@ -250,7 +346,7 @@ while i < size(folderList, 1)
     i = i + 1;
     
     % If the folder content is . or .., skip to next folder in list
-    if strcmp(folderList(i).name,'.') || strcmp(folderList(i).name,'..')
+    if strcmp(folderList(i).name, '.') || strcmp(folderList(i).name, '..')
         continue
         
     % Otherwise, if the folder content is a subfolder    
@@ -303,9 +399,13 @@ while i < size(folderList, 1)
         % Generate separate path and names for XML
         [path, name, ext] = ...
             fileparts(fullfile(inputDir, folderList(i).name));
+        name = strcat(name, ext);
+        
+        % Clear temporary variable
+        clear ext;
         
         % Search for and load all approvedPlans in the archive
-        approvedPlans = FindPlans(path, strcat(name, ext));
+        approvedPlans = FindPlans(path, name);
         
         % Loop through each registered daily image
         Event('Looping through each approved plan');
@@ -324,7 +424,7 @@ while i < size(folderList, 1)
                     % If the XML SHA1 signature, plan UID, number of 
                     % modifications/metrics match
                     if strcmp(results{2}{k}, sha) && ...
-                            strcmp(results{3}{k}, approvedPlans{j}.UID) && ...
+                            strcmp(results{3}{k}, approvedPlans{j}) && ...
                             str2double(results{6}{k}) == ...
                             size(modifications,1) && ...
                             str2double(results{7}{k}) == size(metrics,1)
@@ -346,13 +446,265 @@ while i < size(folderList, 1)
                 
                 % Attempt to run Systematic Error workflow
                 try 
+                    % Log start
+                    Event(sprintf(['Executing systematic error workflow', ...
+                        ' on plan UID %s'], approvedPlans{j}));
                     
-                %%%%%%%%%%%
-                %
-                % Add code here
-                %
-                %%%%%%%%%%%
-                     
+                    % Start plan timer
+                    planTimer = tic;
+                    
+                    % Load delivery plan
+                    planData = LoadPlan(path, name, approvedPlans{j});
+                    
+                    % Load reference image
+                    referenceImage = ...
+                        LoadReferenceImage(path, name, approvedPlans{j});
+                    
+                    % Load structures
+                    referenceImage.structures = LoadReferenceStructures(...
+                        path, name, referenceImage, atlas);
+                    
+                    % Find structure category
+                    category = FindCategory(referenceImage.structures, ...
+                        atlas);
+                    
+                    % Execute CalcDose on reference plan
+                    referenceDose = CalcDose(referenceImage, planData, ...
+                        [0 0 0 0 0 0], ssh2);
+                    
+                    % Write reference DVH to .csv file
+                    WriteDVH(fullfile(dvhDir, strcat(approvedPlans{j}, ...
+                        '_reference.csv')), referenceImage, referenceDose);
+                    
+                    % Initialize 2D plan metrics storage array (initialize
+                    % with -1)
+                    planMetrics = zeros(size(metrics,2), ...
+                        size(modifications,2)+1) - 1;
+                    
+                    % Loop through plan metrics, computing reference value
+                    for k = 1:size(metrics, 2)
+                       
+                        % If category is empty, or if it exists in the
+                        % metric's category list
+                        if isempty(metrics{k,4}) || ...
+                                regexp(category, metrics{k,4}) > 0
+                            
+                            % If no additional arguments are included
+                            if isempty(metrics{k,3})
+                                
+                                % Execute metric with no additional args
+                                planMetrics(k, 1) = feval(metrics{k,2}, ...
+                                    referenceImage, referenceDose, ...
+                                    referenceDose);
+                            else
+                                % Split metric arguments using / delimiter
+                                str = strsplit(metrics{k,3}, '/');
+                                
+                                % Switch on number of input arguments
+                                switch length(str)
+                                case 1
+                                    % Execute metric with 1 additional arg
+                                    planMetrics(k, 1) = feval(metrics{k,2}, ...
+                                        referenceImage, referenceDose, ...
+                                        referenceDose, str(1));
+                                case 2
+                                    % Execute metric with 2 additional args
+                                    planMetrics(k, 1) = feval(metrics{k,2}, ...
+                                        referenceImage, referenceDose, ...
+                                        referenceDose, str(1), str(2));
+                                case 3
+                                    % Execute metric with 3 additional args
+                                    planMetrics(k, 1) = feval(metrics{k,2}, ...
+                                        referenceImage, referenceDose, ...
+                                        referenceDose, str(1), str(2), ...
+                                        str(3));
+                                otherwise
+                                    % Otherwise throw an error
+                                    Event('Too many arguments for feval', ...
+                                        'ERROR');
+                                end
+                                
+                                % Clear temporary variable
+                                clear str;
+                            end
+                        end    
+                    end
+                    
+                    % Clear temporary variable
+                    clear k;
+                    
+                    % Loop through plan modifications
+                    for k = 1:size(modifications, 2)
+                        
+                        % If no additional arguments are included
+                        if isempty(modifications{k,3})
+                            
+                            % Execute modifications with no additional args
+                            modPlan = feval(modifications{k,2}, planData);
+                            
+                        else
+                            % Split modifications arguments using / 
+                            % delimiter
+                            str = strsplit(modifications{k,3}, '/');
+                            
+                            % Switch on number of input arguments
+                            switch length(str)
+                            case 1
+                                % Execute metric with 1 additional arg
+                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                    planData, str(1));
+                            case 2
+                                % Execute metric with 2 additional args
+                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                    planData, str(1), str(2));
+                            case 3
+                                % Execute metric with 3 additional args
+                                modPlan(k, 1) = feval(modifications{k,2}, ...
+                                    planData, str(1), str(2), str(3));
+                            otherwise
+                                % Otherwise throw an error
+                                Event('Too many arguments for feval', ...
+                                    'ERROR');
+                            end
+
+                            % Clear temporary variable
+                            clear str;
+                        end
+                        
+                        % Calculate modified plan dose
+                        modDose = CalcDose(referenceImage, modPlan, ...
+                            [0 0 0 0 0 0], ssh2);
+                        
+                        % Write modified DVH to .csv file
+                        WriteDVH(fullfile(dvhDir, strcat(approvedPlans{j}, ...
+                            '_',modifications{k,1},'.csv')), ...
+                            referenceImage, modDose);
+                        
+                        % Loop through plan metrics, computing modified 
+                        % value
+                        for n = 1:size(metrics, 2)
+
+                            % If category is empty, or if it exists in the
+                            % metric's category list
+                            if isempty(metrics{n,4}) || ...
+                                    regexp(category, metrics{n,4}) > 0
+
+                                % If no additional arguments are included
+                                if isempty(metrics{n,3})
+
+                                    % Execute metric with no additional 
+                                    % args
+                                    planMetrics(n, k+1) = feval(...
+                                        metrics{n,2}, referenceImage, ...
+                                        modDose, referenceDose);
+                                else
+                                    % Split metric arguments using / 
+                                    % delimiter
+                                    str = strsplit(metrics{n,3}, '/');
+
+                                    % Switch on number of input arguments
+                                    switch length(str)
+                                    case 1
+                                        % Execute metric with 1 additional 
+                                        % arg
+                                        planMetrics(n, k+1) = feval(...
+                                            metrics{n,2}, referenceImage, ...
+                                            modDose, referenceDose, ...
+                                            str(1));
+                                    case 2
+                                        % Execute metric with 2 additional 
+                                        % args
+                                        planMetrics(n, k+1) = feval(...
+                                            metrics{n,2}, referenceImage, ...
+                                            modDose, referenceDose, ...
+                                            str(1), str(2));
+                                    case 3
+                                        % Execute metric with 3 additional 
+                                        % args
+                                        planMetrics(n, k+1) = feval(...
+                                            metrics{n,2}, referenceImage, ...
+                                            modDose, referenceDose, ...
+                                            str(1), str(2), str(3));
+                                    otherwise
+                                        % Otherwise throw an error
+                                        Event(['Too many arguments for ', ...
+                                            feval'], 'ERROR');
+                                    end
+
+                                    % Clear temporary variable
+                                    clear str;
+                                end
+                            end    
+                        end
+
+                        % Clear temporary variable
+                        clear k;
+                    end
+                
+                    % Loop thorugh each metric, writing results
+                    for k = 1:size(metrics, 2)
+                        
+                        % Open append file handle to metric result
+                        fid = fopen(fullfile(metricDir, ...
+                            strcat(metrics{i,1}, '.csv')), 'a');
+                        
+                        % Write metric results
+                        fprintf(fid, '%s,', approvedPlans{j});
+                        fprintf(fid, '%f,', planMetrics(k, :));
+                        fprintf(fid, '\n');
+                        
+                        % Close file handle
+                        close(fid);
+                    end
+                    
+                    % Open append file handle to results .csv
+                    fid = fopen(resultsCSV, 'a');
+
+                    % If anon is TRUE, do not store the XML name and 
+                    % location in column 1
+                    if anon
+                        % Instead, replace with 'ANON'
+                        fprintf(fid,'ANON,'); %#ok<*UNRCH>
+                    else
+                        % Otherwise, write relative path location 
+                        fprintf(fid, '%s,', ...
+                            strrep(folderList(i).name, ',', ''));
+                    end
+                    
+                    % Write XML SHA1 signature in column 2
+                    fprintf(fid, '%s,', sha);
+                    
+                    % Write plan UID in column 3
+                    fprintf(fid, '%s,', approvedPlans{j});
+                    
+                    % Write plan category in column 4.  See FindCategory
+                    fprintf(fid, '%s,', category);
+                    
+                    % Write the number of structures in column 5
+                    fprintf(fid, '%i,', ...
+                        size(referenceImage.structures, 2));
+                    
+                    % Write the number of plan modifications in column 6
+                    fprintf(fid, '%i,', size(modifications, 2));
+                    
+                    % Write the number of metrics in column 7
+                    fprintf(fid, '%i,', size(metrics, 2));
+                    
+                    % Write the plan run time in column 8
+                    fprintf(fid, '%f,', toc(planTimer));
+                    
+                    % Write the version number in column 9
+                    fprintf(fid, '%s\n', version);
+                    
+                    % Close file handle
+                    close(fid);
+                    
+                    % Clear temporary variables
+                    clear fid k planTimer planMetrics category;
+                    
+                    % Increment the count of processed images
+                    count = count + 1;
+                    
                 % If an error is thrown, catch
                 catch exception
                     
@@ -371,7 +723,7 @@ while i < size(folderList, 1)
         end
         
         % Clear temporary variables
-        clear path name ext;
+        clear path name approvedPlans;
     end 
 end
 
