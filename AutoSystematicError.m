@@ -91,15 +91,17 @@ anon = false;
 
 % Set the input directory.  This directory will be scanned for patient
 % archives during execution of AutoSystematicError
-inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/';
+inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/Anon_0001/';
 
 % Set the .csv file where the results summary will be appended
 resultsCSV = '../Study_Results/Results.csv';
 
-% Set the directory where each DVH .csv will be stored
+% Set the directory where each DVH .csv will be stored. Make sure this
+% directory exists.
 dvhDir = '../Study_Results/DVHs/';
 
-% Set the directory where each metric .csv will be stored
+% Set the directory where each metric .csv will be stored. Make sure this
+% directory exists.
 metricDir = '../Study_Results/';
 
 % Set version handle
