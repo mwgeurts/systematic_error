@@ -157,6 +157,101 @@ if ~isfield(planData, 'planTrialUID')
         ' found in %s'], planUID, name), 'ERROR');
 end
 
+%% Load Plan Trial Data
+Event('Searching for plan trial');
+
+% Search for fluence delivery plan associated with the plan trial
+expression = ...
+    xpath.compile('//fullPlanTrialArray/fullPlanTrialArray/patientPlanTrial');
+
+% Evaluate xpath expression and retrieve the results
+nodeList = expression.evaluate(doc, XPathConstants.NODESET);  
+
+% Loop through the patient plan trials
+for i = 1:nodeList.getLength
+    
+    % Retrieve a handle to this plan trial
+    node = nodeList.item(i-1);
+
+    % Search for delivery plan parent UID
+    subexpression = xpath.compile('dbInfo/databaseParent');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+
+    % If no database parent was found, continue to next result
+    if subnodeList.getLength == 0
+        continue
+    end
+
+    % Otherwise, retrieve a handle to the results
+    subnode = subnodeList.item(0);
+
+    % If the delivery databaseParent UID does not match the plan UID, this 
+    % plan trial is associated with a different plan, so continue to next 
+    % result
+    if strcmp(char(subnode.getFirstChild.getNodeValue), ...
+            planData.planUID) == 0
+        continue
+    end
+    
+    %% Load prescribed dose
+    % At this point, this plan trial is the correct one, so continue to 
+    % search for information about the plan
+
+    % Search for prescribed dose
+    subexpression = xpath.compile('prescription/prescribedDose');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+    
+    % Store the first returned value
+    subnode = subnodeList.item(0);
+
+    % Store the prescribed dose to the planData structure
+    planData.prescribedDose = ...
+        str2double(subnode.getFirstChild.getNodeValue);
+    
+    %% Load prescribed volume
+    % Search for prescribed volume
+    subexpression = xpath.compile('prescription/volumePercentage');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+    
+    % Store the first returned value
+    subnode = subnodeList.item(0);
+
+    % Store the prescribed volume to the planData structure
+    planData.prescribedVolume = ...
+        str2double(subnode.getFirstChild.getNodeValue);
+    
+    %% Load prescribed structure UID
+    % Search for prescribed structure UID
+    subexpression = xpath.compile('prescription/doseReferenceUID');
+
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+    
+    % Store the first returned value
+    subnode = subnodeList.item(0);
+
+    % Store the structure UID to the planData structure
+    planData.prescribedStructureUID = ...
+        char(subnode.getFirstChild.getNodeValue);
+    
+    %% Load number of fractions
+    % Search for fraction schemes
+    subexpression = xpath.compile('plannedFractions/scheme/scheme');
+    
+    % Evaluate xpath expression and retrieve the results
+    subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+
+    % Store the number of schemes found
+    planData.numFractions = subnodeList.getLength;
+
+end
+
 %% Load Fluence Delivery Plan
 Event('Searching for fluence delivery plan');
 
