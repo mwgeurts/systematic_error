@@ -105,6 +105,15 @@ metricDir = '../Study_Results/';
 % Set version handle
 version = '1.0.0';
 
+% Determine path of current application
+[path, ~, ~] = fileparts(mfilename('fullpath'));
+
+% Set current directory to location of this application
+cd(path);
+
+% Clear temporary variable
+clear path;
+
 %% Initialize Log
 % Set version information.  See LoadVersionInfo for more details.
 versionInfo = LoadVersionInfo;
@@ -196,12 +205,15 @@ Event('Loading plan modification functions');
 % third is optional arguments passed to the function. Multiple arguments 
 % can be separated by a forward slash (/).
 modifications = {
-%    'mlc32open'     'ModifyMLCLeafOpen' '32'
-%    'mlc42open'     'ModifyMLCLeafOpen' '42'
-%    'mlcrand2pct'   'ModifyMLCRandom'   '2'
-%    'mlcrand4pct'   'ModifyMLCRandom'   '4'
+    'mlc32open'     'ModifyMLCLeafOpen' '32'
+    'mlc42open'     'ModifyMLCLeafOpen' '42'
+    'mlcrand2pct'   'ModifyMLCRandom'   '2'
+    'mlcrand4pct'   'ModifyMLCRandom'   '4'
     'couch+0.5pct'  'ModifyCouchSpeed'  '0.5'
     'couch+1.0pct'  'ModifyCouchSpeed'  '1.0'
+    'gantry+1.0deg' 'ModifyGantryAngle' '1.0'
+    'jawf+0.5mm'    'ModifyJawFront'    '0.5'
+    'jawb-1.0mm'    'ModifyJawBack'     '-1.0'
 };
 
 % Loop through each modification
@@ -209,6 +221,8 @@ for i = 1:size(modifications, 1)
     
     % Verify that the function exists
     if exist(modifications{i,2}, 'file') == 0
+        
+        % If not, throw an error
         Event(sprintf('Plan modification function %s not found', ...
             modifications{i,2}), 'ERROR');
     end
@@ -233,7 +247,7 @@ metrics = {
     'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
     'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
     'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
-    'targetdx95'    'CalcStructureStat' 'PTV/D95'    ''
+    'targetdx95'    'CalcStructureStat' 'PTV/D95'       ''
 };
 
 % Loop through each metric
@@ -241,6 +255,8 @@ for i = 1:size(metrics, 1)
     
     % Verify that the function exists
     if exist(metrics{i,2}, 'file') == 0
+        
+        % If not, throw an error
         Event(sprintf('Metric calculation function %s not found', ...
             metrics{i,2}), 'ERROR');
     end
