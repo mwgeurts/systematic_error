@@ -337,42 +337,42 @@ fid = fopen(fullfile(folder, 'plan.header'), 'w');
 % Loop through the events cell array
 for i = 1:size(plan.events,1)
     % Write the event tau
-    fprintf(fid,'event.%02i.tau=%0.1f\n',[i-1 plan.events{i,1}]);
+    fprintf(fid, 'event.%02i.tau=%0.1f\n', [i-1 plan.events{i,1}]);
 
     % Write the event type
-    fprintf(fid,'event.%02i.type=%s\n',[i-1 plan.events{i,2}]);
+    fprintf(fid, 'event.%02i.type=%s\n', [i-1 plan.events{i,2}]);
 
     % If type is isoX, apply IECX registration adjustment
     if strcmp(plan.events{i,2}, 'isoX')
-        fprintf(fid,'event.%02i.value=%G\n',[i-1 ...
+        fprintf(fid, 'event.%02i.value=%G\n', [i-1 ...
             plan.events{i,3} - registration(4)]);
         Event(sprintf('Applied isoX registration adjustment %G cm', ...
             -registration(4)));
 
     % Otherwise, if type is isoY, apply IECZ registration adjustment
     elseif strcmp(plan.events{i,2}, 'isoY')
-        fprintf(fid,'event.%02i.value=%G\n',[i-1 ...
+        fprintf(fid, 'event.%02i.value=%G\n', [i-1 ...
             plan.events{i,3} + registration(6)]);
         Event(sprintf('Applied isoY registration adjustment %G cm', ...
             registration(6)));
 
     % Otherwise, if type is isoZ, apply IECY registration adjustment
     elseif strcmp(plan.events{i,2}, 'isoZ')
-        fprintf(fid,'event.%02i.value=%G\n',[i-1 ...
+        fprintf(fid, 'event.%02i.value=%G\n', [i-1 ...
             plan.events{i,3} - registration(5)]);
         Event(sprintf('Applied isoZ registration adjustment %G cm', ...
             registration(5)));
 
     % Otherwise, if type is gantryAngle, apply roll registration adjustment
     elseif strcmp(plan.events{i,2}, 'gantryAngle')
-        fprintf(fid,'event.%02i.value=%G\n',[i-1 ...
+        fprintf(fid, 'event.%02i.value=%G\n', [i-1 ...
             plan.events{i,3} + registration(3)*180/pi]);
         Event(sprintf('Applied roll registration adjustment %G degrees', ...
             registration(3) * 180/pi));
 
     % Otherwise, if the value is not a placeholder, write the value
     elseif plan.events{i,3} ~= 1.7976931348623157E308
-        fprintf(fid,'event.%02i.value=%G\n',[i - 1 plan.events{i,3}]);
+        fprintf(fid, 'event.%02i.value=%G\n', [i - 1 plan.events{i,3}]);
     end
 end
 
@@ -383,12 +383,12 @@ for i = 0:63
     % open projections for this leaf, so write 0
     if i < plan.lowerLeafIndex ...
             || i >= plan.lowerLeafIndex + plan.numberOfLeaves
-        fprintf(fid,'leaf.count.%02i=0\n',i);
+        fprintf(fid, 'leaf.count.%02i=0\n', i);
 
     % Otherwise, write n, where n is the total number of projections in
     % the plan (note that a number of them may still be empty/zero)
     else
-        fprintf(fid,'leaf.count.%02i=%i\n',[i plan.numberOfProjections]);
+        fprintf(fid, 'leaf.count.%02i=%i\n', [i plan.numberOfProjections]);
     end
 end
 
@@ -465,7 +465,7 @@ end
 Event(['Reading dose.img from ', folder]);
 
 % Open a read file handle to the dose image
-fid = fopen(fullfile(folder, 'dose.img'),'r');
+fid = fopen(fullfile(folder, 'dose.img'), 'r');
 
 % Read the dose image into tempdose
 tempdose = reshape(fread(fid, image.dimensions(1)/downsample * ...
@@ -480,7 +480,7 @@ dose.data = zeros(image.dimensions);
 % IEC-Y slice
 if downsample > 1
     
-    % Log interpolation stemp
+    % Log interpolation step
     Event(sprintf(['Upsampling calculated dose image by %i using nearest ', ...
         'neighbor'], downsample));
     
