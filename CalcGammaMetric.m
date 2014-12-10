@@ -92,9 +92,20 @@ gammahist = reshape(gamma, 1, []);
 % Remove values less than or equal to zero (due to threshold)
 gammahist = gammahist(gammahist > 0); 
 
-% Compute pass rate
-metric = length(gammahist(gammahist <= 1)) / length(gammahist) * 100;
+% If gammahist conains at least one voxel
+if isempty(gammahist)
 
+    % Compute pass rate
+    metric = length(gammahist(gammahist <= 1)) / length(gammahist) * 100;
+    
+% Otherwise gammahist is empty
+else
+
+    % Set metric to 0
+    metric = 0;
+    
+end
+    
 % Log result
 Event(sprintf(['%0.1f%%/%0.1fmm Gamma pass rate metric = %e%% ', ...
     '(%0.3f seconds)'], percent, dta, metric, toc));
