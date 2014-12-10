@@ -15,7 +15,7 @@ TomoTherapy is a registered trademark of Accuray Incorporated.
 
 ## Compatibility and Requirements
 
-This application has been validated using TomoTherapy version 4.2 and 5.0 patient archives on Macintosh OSX 10.10 (Yosemite) and MATLAB R2014a (8.4).  No additional MATLAB toolboxes are required for execution.
+This application has been validated using TomoTherapy version 4.2 and 5.0 patient archives on Macintosh OSX 10.10 (Yosemite) and MATLAB R2014b (8.4).  No additional MATLAB toolboxes are required for execution.
 
 ## Troubleshooting
 
