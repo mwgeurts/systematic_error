@@ -107,15 +107,15 @@ for i = 1:nodeList.getLength
     
     %% Compare name to atlas
     % Loop through each atlas structure
-    for j = 1:size(atlas,2)
+    for j = 1:size(atlas, 2)
         
         % Compute the number of include atlas REGEXP matches
-        in = regexpi(name,atlas{j}.include);
+        in = regexpi(name, atlas{j}.include);
         
         % If the atlas structure also contains an exclude REGEXP
         if isfield(atlas{j}, 'exclude') 
             % Compute the number of exclude atlas REGEXP matches
-            ex = regexpi(name,atlas{j}.exclude);
+            ex = regexpi(name, atlas{j}.exclude);
         else
             % Otherwise, return 0 exclusion matches
             ex = [];
@@ -183,6 +183,20 @@ for i = 1:nodeList.getLength
         structures{n}.color(3) = ...
             str2double(subnode.getFirstChild.getNodeValue);
 
+        %% Load structure UID
+        % Search for structure set UID
+        subexpression = xpath.compile('briefROI/dbInfo/databaseUID');
+        
+        % Evaluate xpath expression and retrieve the results
+        subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
+        
+        % Store the first returned value
+        subnode = subnodeList.item(0);
+        
+        % Store database UID in return cell array as char
+        structures{n}.structureUID = ...
+            char(subnode.getFirstChild.getNodeValue);
+        
         %% Load density override information
         % Search for structure set density override flag
         subexpression = xpath.compile('briefROI/isDensityOverridden');
@@ -243,6 +257,7 @@ Event(sprintf('%i structures matched atlas for %s', n, ...
 
 % Loop through the structures discovered
 for i = 1:n
+    
     % Generate empty logical mask of the same image size as the reference
     % image (see LoadReferenceImage for more information)
     structures{i}.mask = false(image.dimensions); 
@@ -271,7 +286,8 @@ for i = 1:n
     
     % Loop through ROICurves
     for j = 1:nodeList.getLength
-       % Set a handle to the current result
+        
+        % Set a handle to the current result
         subnode = nodeList.item(j-1); 
 
         % Read in the number of points in the curve
@@ -279,6 +295,7 @@ for i = 1:n
         
         % Some curves have zero points, so skip them
         if numpoints > 0
+            
             % Read in curve points
             points = str2num(subnode.getFirstChild.getNodeValue); %#ok<ST2NM>
 
@@ -290,6 +307,7 @@ for i = 1:n
         
             % If the slice index is within the reference image
             if slice ~= 0
+                
                 % Test if voxel centers are within polygon defined by point 
                 % data, adding result to structure mask.  Note that voxels 
                 % encompassed by even numbers of curves are considered to 
@@ -327,6 +345,7 @@ for i = 1:n
     
     % Check if at least one voxel in the mask was set to true
     if max(max(max(structures{i}.mask))) == 0
+        
         % If not, warn the user that the mask is empty
         Event(['Structure ', structures{i}.name, ...
             ' is less than one voxel.'], 'WARN');
@@ -345,6 +364,7 @@ Event(sprintf('Structure load completed in %0.3f seconds', toc));
 
 % Catch errors, log, and rethrow
 catch err
+    
     % Delete progress handle if it exists
     if exist('progress','var') && ishandle(progress), delete(progress); end
     
