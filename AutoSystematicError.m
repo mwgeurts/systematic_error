@@ -265,6 +265,7 @@ for i = 1:size(metrics, 1)
         
         % Print column headers
         fprintf(fid, 'Plan UID,');
+        fprintf(fid, 'Category,');
         fprintf(fid, 'Reference,');
         
         % Loop through each plan modification
@@ -656,6 +657,7 @@ while i < size(folderList, 1)
                         
                         % Write metric results
                         fprintf(fid, '%s,', approvedPlans{j});
+                        fprintf(fid, '%s,', category);
                         fprintf(fid, '%f,', planMetrics(k, :));
                         fprintf(fid, '\n');
                         
