@@ -43,18 +43,19 @@ Event(sprintf('Adjusting gantry rate by %0.2f%%', degsec));
 % Loop through delivery plan events
 for i = 1:size(plan.events, 1)
     
-    % If the event specifies gantry angle
-    if strcmp(plan.events{i,2}, 'gantryAngle') 
+    % If the event specifies gantry rate
+    if strcmp(plan.events{i,2}, 'gantryRate') 
     
         % Modify the event value
-        plan.events{i,3} = mod(plan.events{i,3} + degsec, 360);
-        -----
-        
-%         if (strcmp(event{i}.type,'gantryRate'))
-%            fprintf(fid,'event.%02u.value=%0.16f\n',i-1,event{i}.value+0.5/plan_scale/fractions);
-%         elseif (strcmp(event{i}.type,'gantryAngle'))
-%            fprintf(fid,'event.%02u.value=%0.16f\n',i-1,mod(event{i}.value-0.5/plan_scale/fractions*start,360));
-%            
-           
+        plan.events{i,3} = plan.events{i,3} + ...
+            degsec / plan.scale / plan.numFractions;
+    
+    % If the event specifies gantry angle
+    elseif strcmp(plan.events{i,2}, 'gantryAngle') 
+    
+        % Modify the event value
+        plan.events{i,3} = mod(plan.events{i,3} - ...
+            degsec / plan.scale / plan.numFractions * plan.startTrim, 360);
+            
     end
 end
