@@ -9,18 +9,49 @@ TomoTherapy is a registered trademark of Accuray Incorporated.
 
 ## Contents
 
+* [Installation and Use](README.md#installation-and-use)
+* [Compatibility and Requirements](README.md#compatibility-and-requirements)
+* [Troubleshooting](README.md#troubleshooting)
+* [Failure Modes](README.md#failure-modes)
+  * [Current Installed Failure Modes](README.md#current-installed-failure-modes)
+  * [Adding New Failure Mode Plugins](README.md#adding-new-failure-mode-plugins)
+* [FComparison Metrics](README.md#comparison-metrics)
+  * [Current Installed Metrics](README.md#current-installed-metrics)
+  * [Adding New Metric Plugins](README.md#adding-new-metric-plugins)
+* [Third Party Statements](README.md#third-party-statements)
 
 ## Installation and Use
 
+To install the TomoTherapy FMEA Simulation Tool, copy all MATLAB .m and .fig and DICOM .dcm files into a directory with read/write access and then copy the [CalcGamma.m submodule from the gamma repository](https://github.com/mwgeurts/gamma) into the `gamma` subfolder.  If using git, execute `git clone --recursive https://github.com/mwgeurts/systematic_error`.
+
+Next, the TomoTherapy FMEA Simulation Tool must be configured to communicate with a dose calculation server.  Open `AutoSystematicError()` and find the following lines (note each line is separated by several lines of comments and `Event()` calls in the actual file):
+
+```
+addpath('../ssh2_v2_m1_r6/');
+ssh2 = ssh2_config('tomo-research','tomo','hi-art');
+```
+
+This application uses the [SSH/SFTP/SCP for Matlab (v2)] (http://www.mathworks.com/matlabcentral/fileexchange/35409-sshsftpscp-for-matlab-v2) interface based on the Ganymed-SSH2 javalib for communication with the dose calculation server.  If performing dose calculation, this interface must be downloaded/extracted and the `AutoSystematicError()` statement `addpath('../ssh2_v2_m1_r6/')` modified to reflect its location.  If this interface is not available, use of the TomoTherapy Exit Detector Analysis application is still available for sinogram comparison, but all dose and Gamma computation and evaluation functionality will be automatically disabled.
+
+Next, edit `ssh2_config()` with the the IP/DNS address of the dose computation server (tomo-research, for example), a user account on the server (tomo), and password (hi-art).  This user account must have SSH access rights, rights to execute `gpusadose`, and finally read/write acces to the temp directory.  See Accuray Incorporated to see if your research workstation includes this feature.
+
+Finally, for dose calculation copy the following beam model files in a folder named `GPU` in the MATLAB directory.  These files will be copied to the computation server along with the plan files at the time of program execution.  To change this directory, edit the line `[status, cmdout] = system(['cp GPU/*.* ', folder, '/']);` in `CalcDose()`.
+
+* dcom.header
+* lft.img
+* penumbra.img
+* kernel.img
+* fat.img
+
+When using the Gamma metric, if the Parallel Computing Toolbox is enabled, `CalcGamma()` will attempt to compute the three-dimensional computation using a compatible CUDA device.  To test whether the local system has a GPU compatible device installed, run `gpuDevice(1)` in MATLAB.  All GPU calls in this application are executed in a try-catch statement, and automatically revert to an equivalent (albeit longer) CPU based computation if not available or if the available memory is insufficient.
 
 ## Compatibility and Requirements
 
-This application has been validated using TomoTherapy version 4.2 and 5.0 patient archives on Macintosh OSX 10.10 (Yosemite) and MATLAB R2014b (8.4).  No additional MATLAB toolboxes are required for execution.
+This application has been validated using TomoTherapy version 4.2 and 5.0 patient archives on Macintosh OSX 10.10 (Yosemite) and MATLAB version 8.4 with Parallel Computing Toolbox version 6.4.  As discussed above, the Parallel Computing Toolbox is only required if using the Gamma metric plugin with GPU based computation.
 
 ## Troubleshooting
 
 This application records key input parameters and results to a log.txt file using the `Event()` function. The log is the most important route to troubleshooting errors encountered by this software.  The author can also be contacted using the information above.  Refer to the license file for a full description of the limitations on liability when using or this software or its components.
-
 
 ## Failure Modes
 
