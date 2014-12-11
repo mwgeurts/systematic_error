@@ -27,7 +27,7 @@ To install the TomoTherapy FMEA Simulation Tool, copy all MATLAB .m and .fig and
 
 Next, the TomoTherapy FMEA Simulation Tool must be configured to communicate with a dose calculation server.  Open `AutoSystematicError()` and find the following lines (note each line is separated by several lines of comments and `Event()` calls in the actual file):
 
-```
+```matlab
 addpath('../ssh2_v2_m1_r6/');
 ssh2 = ssh2_config('tomo-research','tomo','hi-art');
 ```
@@ -50,7 +50,9 @@ To run this application, call the function `AutoSystematicError()` from MATLAB w
 
 Because this application runs without a user interface, it may also be executed via a terminal, as shown in the following example:
 
-`/Applications/MATLAB_R2014b.app/bin/matlab -nodesktop -r AutoSystematicError`
+```
+/Applications/MATLAB_R2014b.app/bin/matlab -nodesktop -r AutoSystematicError
+```
 
 ## Compatibility and Requirements
 
@@ -64,11 +66,15 @@ This application records key input parameters and results to a log.txt file usin
 
 Failure modes are simulated by adjusting the optimized delivery plan for each optimized TomoTherapy treatment plan using "plugin" functions.  The cell array `modifications` in the function `AutoSystematicError` specifies the list of plugins that will be executed for each TomoTherapy plan.  Each row in this array specifies the name, function, and optional additional arguments to be passed to the plugin function as three string elements.  In the following example, the plugin "mlcrand2pct" calls the function "ModifyMLCRandom" with the additional parameter "2".  Multiple arguments (up to three) can be specified in the argument string, separated by a forward slash (/).
 
-`modifications = {'mlcrand2pct'   'ModifyMLCRandom'   '2'};`
+```matlab
+modifications = {'mlcrand2pct'   'ModifyMLCRandom'   '2'};
+```
 
 Each plugin is executed using the `feval()` command, with the delivery plan structure as the first argument and any additional arguments as specified in the `modifications` cell array.  A modified delivery plan structure (in the same format as the reference plan) is expected as the return variable.  Given the example above, the execution will be as follows:
 
-`modPlan = feval('ModifyMLCRandom', referencePlan, '2');`
+```matlab
+modPlan = feval('ModifyMLCRandom', referencePlan, '2');
+```
 
 For more information on the delivery plan format, refer to the documentation in `LoadPlan()`.
 
@@ -80,14 +86,39 @@ The following plugins are predefined and represent basic modifications to the de
 |----------|-----------|-------------|
 | ModifyMLCLeafOpen | leaf | Modifies the delivery plan assuming that leaf is open for all active projections.  Used to simulate a stuck leaf.
 | ModifyMLCRandom | percent | Modifies the delivery plan by reducing all open leaves by an average percent (range of reduction is between zero and 2*percent).
-| ModifyCouchSpeed | percent | Modifies the delivery plan couch speed uniformly across the entire treatment by percent. Used to simulate a miscalibration.
-| ModifyGantryAngle | degree | 
-| ModifyGantryRate | degsec |
-| ModifyJawFront | distance |
-| ModifyJawBack | distance |
+| ModifyCouchSpeed | percent | Modifies the delivery plan couch speed uniformly across the entire treatment by percent. Used to simulate a miscalibration of the couch actuator.
+| ModifyGantryAngle | degree | Modifies the delivery plan gantry start angle to systematically offset all beams by degree.  Used to simulate a gantry position miscalibration.
+| ModifyGantryRate | degsec | Modifies the delivery plan to adjust the gantry rate by degsec (in degrees per second).  The gantry start angle is also modified such that the first projection is still delivered at the original angle, even though the gantry period is different.
+| ModifyJawFront | distance | Modifies the delivery plan to adjust the front jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions.
+| ModifyJawBack | distance | Modifies the delivery plan to adjust the back jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions.
 
 ### Adding New Failure Mode Plugins
 
+To add a new plugin, first write a function that accepts the delivery plan as the first argument, then up to three additional arguments, and returns a modified delivery plan.  The following example illustrates a function declaration with two arguments:
+
+```matlab
+modPlan = function NewModificationPlugin(refPlan, arg1, arg2)
+% This is an example function to illustate how to write custom plugins
+  
+     % Set modified plan to reference plan
+     modPlan = refPlan;
+  
+     % Adjust delivery plan somehow
+
+% End of function  
+end
+```
+
+Next, edit the `modifications` cell array definition in `AutoSystematicError()` to add the new function, giving it the name "newplugin":
+
+```matlab
+modifications = {
+     'mlcrand2pct'   'ModifyMLCRandom'         '2'
+     'newplugin'     'NewModificationPlugin'   '1/2'
+};
+```
+
+When `NewModificationPlugin` is executed, `arg1` will be passed using a value of 1 and `arg2` will have a value of 2.
 
 ## Comparison Metrics
 
