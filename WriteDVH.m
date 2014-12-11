@@ -176,13 +176,10 @@ end
 if nargin == 3
     
     % Extract file name
-    [~, name, ext] = fileparts(varargin{3});
+    [~, file, ext] = fileparts(varargin{3});
     
     % Log event
-    Event(sprintf('Writing dose volume histogram to %s', strcat(name, ext)));
-    
-    % Clear temporary variables
-    clear name ext;
+    Event(sprintf('Writing dose volume histogram to %s', strcat(file, ext)));
     
     % Open a write file handle to the file
     fid = fopen(varargin{3}, 'w');
@@ -191,7 +188,6 @@ if nargin == 3
     if fid > 0
         
         % Write the file name in the first row, starting with a hash
-        [~, file, ext] = fileparts(varargin{3});
         fprintf(fid, '#,%s\n', strcat(file, ext));
         
         % Write the structure names and volumes in the second row
