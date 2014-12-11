@@ -19,6 +19,9 @@ TomoTherapy is a registered trademark of Accuray Incorporated.
   * [Current Installed Metrics](README.md#current-installed-metrics)
   * [Adding New Metric Plugins](README.md#adding-new-metric-plugins)
 * [Report Files](README.md#report-files)
+  * [Results Excel File](README.md#results-excel-file)
+  * [DVH Excel Files](README.md#dvh-excel-files)
+  * [Metric Excel Files](README.md#metric-excel-files)
 * [Third Party Statements](README.md#third-party-statements)
 
 ## Installation and Use
@@ -64,13 +67,13 @@ This application records key input parameters and results to a log.txt file usin
 
 ## Failure Modes
 
-Failure modes are simulated by adjusting the optimized delivery plan for each optimized TomoTherapy treatment plan using "plugin" functions.  The cell array `modifications` in the function `AutoSystematicError` specifies the list of plugins that will be executed for each TomoTherapy plan.  Each row in this array specifies the name, function, and optional additional arguments to be passed to the plugin function as three string elements.  In the following example, the plugin "mlcrand2pct" calls the function "ModifyMLCRandom" with the additional parameter "2".  Multiple arguments (up to three) can be specified in the argument string, separated by a forward slash (/).
+Failure modes are simulated by adjusting the optimized delivery plan for each optimized TomoTherapy treatment plan using "plugin" functions.  The cell array `modifications` in the function `AutoSystematicError()` specifies the list of plugins that will be executed for each TomoTherapy plan.  Each row in this array specifies the name, function, and optional additional arguments to be passed to the plugin function as three string elements.  In the following example, the plugin "mlcrand2pct" calls the function "ModifyMLCRandom" with the additional argument "2".  Multiple arguments (up to three) can be specified in the argument string, separated by a forward slash (/).  At this time, only static values for optional parameters are currently supported.
 
 ```matlab
 modifications = {'mlcrand2pct'   'ModifyMLCRandom'   '2'};
 ```
 
-Each plugin is executed using the `feval()` command, with the delivery plan structure as the first argument and any additional arguments as specified in the `modifications` cell array.  A modified delivery plan structure (in the same format as the reference plan) is expected as the return variable.  Given the example above, the execution will be as follows:
+Each modification plugin is executed using the `feval()` command, with the delivery plan structure as the first argument and any additional arguments as specified in the `modifications` cell array.  A modified delivery plan structure (in the same format as the reference plan) is expected as the return variable.  Given the example above, the execution will be as follows:
 
 ```matlab
 modPlan = feval('ModifyMLCRandom', referencePlan, '2');
@@ -122,6 +125,19 @@ When `NewModificationPlugin` is executed, `arg1` will be passed using a value of
 
 ## Comparison Metrics
 
+Similar to Failure Modes, the TomoTherapy FMEA Simulation Tool uses "plugin" functions to allow customized metrics to be added.  Each metric is computed for the reference (unmodified) plan dose and each Failure Mode simulated dose.  The cell array `metrics` in the function `AutoSystematicError()` specifies the list of plugins that will be executed for each dose volume.  Each row in this array specifies the name, function, and optional additional arguments to be passed to the plugin function as three string elements.  In the following example, the plugin "gamma2pct1mm" calls the function "CalcGammaMetric" with the additional arguments "2" and "1".  Multiple arguments (up to three) can be specified in the argument string, separated by a forward slash (/).  At this time, only static values for optional parameters are currently supported.
+
+```matlab
+metrics = {'gamma2pct1mm'   'CalcGammaMetric'   '2/1'};
+```
+
+Each metric plugin is executed using the `feval()` command, with the image structure as the first argument, reference dose structure as the second argument, modified dose as the third argument, atlas cell array as the fourth argument, and any additional arguments as specified in the `metric` cell array.  A numerical metric is expected as the return variable.  Given the example above, the execution will be as follows:
+
+```matlab
+metric = feval('CalcGammaMetric', image, refDose, modDose, altas, '2', '1');
+```
+
+The image structure contains both the CT data and structure set information (see `LoadReferenceImage()` and `LoadReferenceStructures()` for more information on this format).  For more information on the dose structure format, see `CalcDose()`.  Finally, for information on the atlas cell array format, see `LoadAtlas()`.   
 
 ### Current Installed Metrics
 
@@ -131,6 +147,11 @@ When `NewModificationPlugin` is executed, `arg1` will be passed using a value of
 
 ## Report Files
 
+### Results Excel File
+
+### DVH Excel Files
+
+### Metric Excel Files
 
 ## Gamma Computation Methods
 
