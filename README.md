@@ -49,7 +49,7 @@ Finally, for dose calculation copy the following beam model files in a folder na
 
 When using the 3D [gamma analysis](http://www.ncbi.nlm.nih.gov/pubmed/9608475) metric, if the Parallel Computing Toolbox is enabled, `CalcGamma()` will attempt to compute the three-dimensional computation using a compatible CUDA device.  To test whether the local system has a GPU compatible device installed, run `gpuDevice(1)` in MATLAB.  All GPU calls in this application are executed in a try-catch statement, and automatically revert to an equivalent (albeit longer) CPU based computation if not available or if the available memory is insufficient.
 
-To run this application, call the function `AutoSystematicError()` from MATLAB with no input arguments.  As described below, the application will find all patient archives (filename appended with "_patient.xml") within a specified input directory and run the FMEA simulation.  To change the search directory, edit the `inputDir` declaration statement in the function `AutoSystematicError()`.  Similarly, the report files and directories can be modified by adjusting the `resultsCSV`, `dvhDir`, and `metricDir` statements.  For more information on the report files, see [Report Files](README.md#report-files).
+To run this application, call the function `AutoSystematicError()` from MATLAB with no input arguments.  As described below, the application will find all patient archives (filename appended with "_patient.xml") within a specified input directory and run the FMEA simulation.  To change the search directory, edit the `inputDir` declaration statement in the function `AutoSystematicError()`.  When searching the input directory, the folder lists are intentionally randomized such that the plans are processed by the tool in a random order.
 
 Because this application runs without a user interface, it may also be executed via a terminal, as shown in the following example:
 
@@ -87,13 +87,13 @@ The following plugins are predefined and represent basic modifications to the de
 
 | Function | Arguments | Description |
 |----------|-----------|-------------|
-| ModifyMLCLeafOpen | leaf | Modifies the delivery plan assuming that leaf is open for all active projections.  Used to simulate a stuck leaf.
-| ModifyMLCRandom | percent | Modifies the delivery plan by reducing all open leaves by an average percent (range of reduction is between zero and 2*percent).
-| ModifyCouchSpeed | percent | Modifies the delivery plan couch speed uniformly across the entire treatment by percent. Used to simulate a miscalibration of the couch actuator.
-| ModifyGantryAngle | degree | Modifies the delivery plan gantry start angle to systematically offset all beams by degree.  Used to simulate a gantry position miscalibration.
-| ModifyGantryRate | degsec | Modifies the delivery plan to adjust the gantry rate by degsec (in degrees per second).  The gantry start angle is also modified such that the first projection is still delivered at the original angle, even though the gantry period is different.
+| ModifyMLCLeafOpen | leaf | Modifies the delivery plan assuming that leaf is open for all active projections.  Used to simulate a stuck leaf. |
+| ModifyMLCRandom | percent | Modifies the delivery plan by reducing all open leaves by an average percent (range of reduction is between zero and 2*percent). |
+| ModifyCouchSpeed | percent | Modifies the delivery plan couch speed uniformly across the entire treatment by percent. Used to simulate a miscalibration of the couch actuator. |
+| ModifyGantryAngle | degree | Modifies the delivery plan gantry start angle to systematically offset all beams by degree.  Used to simulate a gantry position miscalibration. |
+| ModifyGantryRate | degsec | Modifies the delivery plan to adjust the gantry rate by degsec (in degrees per second).  The gantry start angle is also modified such that the first projection is still delivered at the original angle, even though the gantry period is different. |
 | ModifyJawFront | distance | Modifies the delivery plan to adjust the front jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions.
-| ModifyJawBack | distance | Modifies the delivery plan to adjust the back jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions.
+| ModifyJawBack | distance | Modifies the delivery plan to adjust the back jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions. |
 
 ### Adding New Failure Mode Plugins
 
@@ -141,17 +141,76 @@ The image structure contains both the CT data and structure set information (see
 
 ### Current Installed Metrics
 
+The following metrics are included and illustrate how the structures/atlas and dose arguments can be used.  For additional documentation refer to the documentation in the function.
+
+| Function | Arguments | Description |
+|----------|-----------|-------------|
+| CalcGammaMetric | percent/dta | Computes the 3D Gamma index pass rate percentage between the modified and reference dose volumes using global percent and dta (in mm) criteria. Only voxels greater than 20 percent of the maximum reference dose are included. |
+| CalcStructureStat | structure/stat | Computes a specified stat for one or more structures.  The stat can be Mean, Max, Min, Median, Std, Dx, or Vx (case insensitive). If Dx, the maximum dose to x percentage of the structure volume is calculated.  If Vx, the percent volume receiving at least x dose is calculated.  The structure argument can be any structure name within the atlas cell array.  The voxels contained within all structures that match the inclusion/exclusion regexp criteria for that structure name are then determined, and the statistic computed and returned. |
 
 ### Adding New Metric Plugins
 
+To add a new plugin, first write a function that accepts the image, refDose, modDose, and atlas as the first four arguments, then up to three additional arguments, that finally returns a metric value.  The following example illustrates a function declaration with one argument:
+
+```matlab
+metric = function NewMetricPlugin(image, refDose, modDose, altas, arg1)
+% This is an example function to illustate how to write custom plugins
+  
+     % Compute the metric somehow
+     metric = str2double(arg1) * max(max(max(modDose.data)));
+
+% End of function  
+end
+```
+
+Next, edit the `metrics` cell array definition in `AutoSystematicError()` to add the new function, giving it the name "newmetric":
+
+```matlab
+metrics = {
+     'gamma2pct1mm'   'CalcGammaMetric'   '2/1'
+     'newmetric'      'NewMetricPlugin'   '5'
+};
+```
+
+When `NewMetricPlugin` is executed, `arg1` will be passed using a value of 5.
 
 ## Report Files
 
+The TomoTherapy FMEA Simulation Tool documents all results into a series of Comma Separated Value (.csv) Microsoft&reg; Excel&reg; files. The format of each file is detailed below.
+
 ### Results Excel File
+
+The name and path of the Results Excel file is declared in `AutoSystematicError()` in the line `resultsCSV = '../Study_Results/Results.csv';`.  The first few rows are prepended with hash (#) symbols and contain title and version information. The next row contains a list of column headers.  A new line is then written out for each plan simulated by the tool.  The following information is contained in each column:
+
+| Heading | Description |
+|---------|-------------|
+| Archive | Full path to patient archive _patient.xml.  However, if the variable `anon` is set to TRUE, will be "ANON". |
+| SHA1 | SHA1 signature of _patient.xml file |
+| Plan UID | UID of the plan |
+| Plan Type | Atlas category (HN, Brain, Thorax, Abdomen, Pelvis) |
+| Structures | Number of structures loaded (helpful when loading DVH .csv files) |
+| Modifications | Number of plan modifications computed |
+| Metrics | Number of plan metrics computed |
+| Time | Time (in seconds) to run entire workflow |
+| Version | Version number of AutoSystematicError when plan was run |
+
+It is important to note that the Results Excel file is also used during archive searching to determine if a given plan has already been computed by the tool.  When each new patient archive is parsed, the tool first checks if an existing matching result exists in the Results file.  If the _patient.xml SHA1, plan UID, number of modifications/metrics, and versions match, the plan will be skipped and the next non-matching plan will be simulated.  
+
+In this manner, `AutoSystematicError()` can be executed repeatedly using the same input directory without duplicating results.  This is helpful when running this application against a large library of archives.  Also, as described above, the folders are searched in random order, so multiple executions will start with different plans.
 
 ### DVH Excel Files
 
+A Dose Volume Histogram (DVH) is saved as a .csv file following each reference and modified plan dose calculation.  The path where each DVH is saved is declared in `AutoSystematicError()` in the line `dvhDir = '../Study_Results/DVHs/';`. This directory must exist prior to application execution and the tool must have read/write access.  The name of each DVH file follows the format "planuid_modification.csv", where "modification" is the modification plugin name or "reference".
+
+The first row of the DVH Excel file starts with a hash symbol (#) with the file name written in the second column.  The second row lists each structure, structure number (in parentheses), and structure volume (in cc) in 2 on. For all remaining rows, the normalized cumulative dose histogram is reported, with the first column containing the dose bin (in Gy) and each subsequent column containing the relative volume percentage for that dose.  The tool will always compute 1001 bins equally spaced between zero and the maximum dose.
+
+Finally, it should be noted that this tool currently does not consider partial voxels in volume or DVH calculation, and will therefore differ from the TomoTherapy Treatment Planning System.
+
 ### Metric Excel Files
+
+A final Excel file is created for each metric declared in the `metrics` cell array.  The path where each metric file is saved is declared in `AutoSystematicError()` in the line `metricDir = '../Study_Results/';`. Again, this directory must exist prior to application execution and the tool must have read/write access.  The name of each Metric Excel file is the name of specified in the first column of the `metrics` cell array, followed by the .csv extension.
+
+The first row of each Metric Excel file contains the column headers.  A new line is then written out for each plan simulated by the tool. Equivalent to the Results Excel file, the first column contains the Plan UID and the second contains the Plan Type.  The remaining columns are then populated with the metric computed, with the reference metric in the third column followed by each Failure Mode.  The column header is the name of the plugin, specified in the `modifications` cell array.
 
 ## Gamma Computation Methods
 
