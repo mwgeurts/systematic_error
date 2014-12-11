@@ -343,7 +343,7 @@ for i = 1:size(metrics, 1)
         
         % Print column headers
         fprintf(fid, 'Plan UID,');
-        fprintf(fid, 'Category,');
+        fprintf(fid, 'Plan Type,');
         fprintf(fid, 'Reference,');
         
         % Loop through each plan modification
