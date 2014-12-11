@@ -503,8 +503,16 @@ else
     dose.data = tempdose;
 end
 
+% Compute maximum dose
+maxdose = max(max(max(dose.data)));
+
+% If max dose is zero, throw an error
+if maxdose == 0
+    Event('The dose array is zero', 'ERROR');
+end
+
 % Clear temporary variables
-clear i tempdose;
+clear i tempdose maxdose;
 
 % Copy dose image start, width, and dimensions from CT image
 dose.start = image.start;

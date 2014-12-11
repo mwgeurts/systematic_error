@@ -110,6 +110,11 @@ if isfield(varargin{2}, 'data') && size(varargin{2}.data, 1) > 0
     % Store the maximum value in the reference dose
     maxdose = max(max(max(varargin{2}.data)));
 
+    % If max dose is zero, throw an error
+    if maxdose == 0
+        Event('The dose array is zero', 'ERROR');
+    end
+    
     % Initialize array for reference DVH values with 1001 bins
     dvh = zeros(1001, size(varargin{1}.structures, 2) + 1);
 
@@ -170,6 +175,15 @@ end
 % If a filename was provided
 if nargin == 3
     
+    % Extract file name
+    [~, name, ext] = fileparts(varargin{3});
+    
+    % Log event
+    Event(sprintf('Write dose volume histogram to %s', strcat(name, ext)));
+    
+    % Clear temporary variables
+    clear name ext;
+    
     % Open a write file handle to the file
     fid = fopen(varargin{3}, 'w');
     
@@ -199,6 +213,7 @@ if nargin == 3
         
     % Otherwise MATLAB couldn't open a write handle
     else
+        
         % Throw an error
         Event(sprintf('A file handle could not be opened to %s', ...
             varargin{3}), 'ERROR');
