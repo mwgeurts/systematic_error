@@ -179,7 +179,7 @@ if nargin == 3
     [~, name, ext] = fileparts(varargin{3});
     
     % Log event
-    Event(sprintf('Write dose volume histogram to %s', strcat(name, ext)));
+    Event(sprintf('Writing dose volume histogram to %s', strcat(name, ext)));
     
     % Clear temporary variables
     clear name ext;
