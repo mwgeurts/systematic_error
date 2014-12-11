@@ -190,9 +190,9 @@ if nargin == 3
     % If a valid file handle was returned
     if fid > 0
         
-        % Write the file name in the first row
+        % Write the file name in the first row, starting with a hash
         [~, file, ext] = fileparts(varargin{3});
-        fprintf(fid, ',%s\n', strcat(file, ext));
+        fprintf(fid, '#,%s\n', strcat(file, ext));
         
         % Write the structure names and volumes in the second row
         for i = 1:size(varargin{1}.structures, 2)
