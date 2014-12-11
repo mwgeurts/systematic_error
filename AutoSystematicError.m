@@ -91,7 +91,7 @@ anon = false;
 
 % Set the input directory.  This directory will be scanned for patient
 % archives during execution of AutoSystematicError
-inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/Anon_0001/';
+inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/';
 
 % Set the .csv file where the results summary will be appended
 resultsCSV = '../Study_Results/Results.csv';
@@ -260,8 +260,6 @@ modifications = {
     'gantry+0.6ds'  'ModifyGantryRate'  '0.6'
     'gantry+0.8ds'  'ModifyGantryRate'  '0.8'
     'gantry+1.0ds'  'ModifyGantryRate'  '1.0'
-    'jawf-3.0mm'    'ModifyJawFront'    '-3.0'
-    'jawf-2.5mm'    'ModifyJawFront'    '-2.5'
     'jawf-2.0mm'    'ModifyJawFront'    '-2.0'
     'jawf-1.5mm'    'ModifyJawFront'    '-1.5'
     'jawf-1.0mm'    'ModifyJawFront'    '-1.0'
@@ -270,20 +268,14 @@ modifications = {
     'jawf+1.0mm'    'ModifyJawFront'    '1.0'
     'jawf+1.5mm'    'ModifyJawFront'    '1.5'
     'jawf+2.0mm'    'ModifyJawFront'    '2.0'
-    'jawf+2.5mm'    'ModifyJawFront'    '2.5'
-    'jawf+3.0mm'    'ModifyJawFront'    '3.0'
-    'jawb-3.0mm'    'ModifyJawBack'    '-3.0'
-    'jawb-2.5mm'    'ModifyJawBack'    '-2.5'
-    'jawb-2.0mm'    'ModifyJawBack'    '-2.0'
-    'jawb-1.5mm'    'ModifyJawBack'    '-1.5'
-    'jawb-1.0mm'    'ModifyJawBack'    '-1.0'
-    'jawb-0.5mm'    'ModifyJawBack'    '-0.5'
-    'jawb+0.5mm'    'ModifyJawBack'    '0.5'
-    'jawb+1.0mm'    'ModifyJawBack'    '1.0'
-    'jawb+1.5mm'    'ModifyJawBack'    '1.5'
-    'jawb+2.0mm'    'ModifyJawBack'    '2.0'
-    'jawb+2.5mm'    'ModifyJawBack'    '2.5'
-    'jawb+3.0mm'    'ModifyJawBack'    '3.0'
+    'jawb-2.0mm'    'ModifyJawBack'     '-2.0'
+    'jawb-1.5mm'    'ModifyJawBack'     '-1.5'
+    'jawb-1.0mm'    'ModifyJawBack'     '-1.0'
+    'jawb-0.5mm'    'ModifyJawBack'     '-0.5'
+    'jawb+0.5mm'    'ModifyJawBack'     '0.5'
+    'jawb+1.0mm'    'ModifyJawBack'     '1.0'
+    'jawb+1.5mm'    'ModifyJawBack'     '1.5'
+    'jawb+2.0mm'    'ModifyJawBack'     '2.0'
 };
 
 % Loop through each modification
