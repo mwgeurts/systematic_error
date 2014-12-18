@@ -47,7 +47,7 @@ for i = 1:size(plan.events, 1)
     if strcmp(plan.events{i,2}, 'jawFront') 
     
         % Modify the event value
-        plan.events{i,3} = plan.events{i,3} + distance / 85;
+        plan.events{i,3} = plan.events{i,3} + distance / 850;
         
     end
 end
