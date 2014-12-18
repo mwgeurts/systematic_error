@@ -93,7 +93,7 @@ gammahist = reshape(gamma, 1, []);
 gammahist = gammahist(gammahist > 0); 
 
 % If gammahist conains at least one voxel
-if isempty(gammahist)
+if ~isempty(gammahist)
 
     % Compute pass rate
     metric = length(gammahist(gammahist <= 1)) / length(gammahist) * 100;
