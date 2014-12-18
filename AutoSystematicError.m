@@ -571,8 +571,8 @@ while i < size(folderList, 1)
                        
                         % If category is empty, or if it exists in the
                         % metric's category list
-                        if isempty(metrics{k,4}) || ...
-                                regexp(category, metrics{k,4}) > 0
+                        if isempty(metrics{k,4}) || ~isempty(regexp( ...
+                                category, metrics{k,4}, 'once'))
                             
                             % If no additional arguments are included
                             if isempty(metrics{k,3})
@@ -672,8 +672,8 @@ while i < size(folderList, 1)
 
                             % If category is empty, or if it exists in the
                             % metric's category list
-                            if isempty(metrics{n,4}) || ...
-                                    regexp(category, metrics{n,4}) > 0
+                            if isempty(metrics{n,4}) || ~isempty(regexp( ...
+                                category, metrics{n,4}, 'once'))
 
                                 % If no additional arguments are included
                                 if isempty(metrics{n,3})
