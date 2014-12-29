@@ -162,6 +162,5 @@ end
 
 % Catch errors, log, and rethrow
 catch err  
-    % Log error via Event.m
     Event(getReport(err, 'extended', 'hyperlinks', 'off'), 'ERROR');
 end

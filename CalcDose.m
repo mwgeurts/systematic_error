@@ -473,6 +473,12 @@ tempdose = reshape(fread(fid, image.dimensions(1)/downsample * ...
     0, 'l'), image.dimensions(1)/downsample, ...
     image.dimensions(2)/downsample, image.dimensions(3));
 
+% Close file handle
+fclose(fid);
+
+% Clear file handle
+clear fid;
+
 % Initialize dose.data array
 dose.data = zeros(image.dimensions);
 

@@ -105,7 +105,7 @@ dvhDir = '../Study_Results/DVHs/';
 metricDir = '../Study_Results/';
 
 % Set version handle
-version = '1.0.0';
+version = '1.0.1';
 
 % Determine path of current application
 [path, ~, ~] = fileparts(mfilename('fullpath'));
@@ -332,6 +332,9 @@ for i = 1:size(metrics, 1)
         % Log loading of existing results
         Event(sprintf('Found metric file %s.csv', metrics{i,1}));
     
+        % Close the file handle
+        fclose(fid);
+        
     % Otherwise, create new results file, saving column headers
     else
         % Log generation of new file
@@ -434,6 +437,7 @@ while i < size(folderList, 1)
         
     % Otherwise, if the folder content is a subfolder    
     elseif folderList(i).isdir == 1
+        
         % Retrieve the subfolder contents
         subFolderList = dir(fullfile(inputDir, folderList(i).name));
         
@@ -448,6 +452,7 @@ while i < size(folderList, 1)
                     strcmp(subFolderList(j).name, '..')
                 continue
             else
+                
                 % Otherwise, replace the subfolder name with its full
                 % reference
                 subFolderList(j).name = fullfile(folderList(i).name, ...

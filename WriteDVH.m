@@ -213,6 +213,9 @@ if nargin == 3
         % Throw an error
         Event(sprintf('A file handle could not be opened to %s', ...
             varargin{3}), 'ERROR');
+        
+        % Close file handle
+        fclose(fid);
     end
 end
 

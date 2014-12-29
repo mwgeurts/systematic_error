@@ -68,6 +68,7 @@ structures = cell(0);
 
 % Loop through the troiLists
 for i = 1:nodeList.getLength
+    
     % Set a handle to the current result
     node = nodeList.item(i-1);
     
@@ -137,6 +138,7 @@ for i = 1:nodeList.getLength
     
     % If the load flag is still set to true
     if load
+        
         % Increment counter
         n = n + 1;
 

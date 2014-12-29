@@ -37,26 +37,33 @@ matches = cell(0);
 
 % Loop through all provided structures
 for i = 1:size(structures,2)
+    
     % Loop through each atlas structure
     for j = 1:size(atlas,2)
+        
         % If the atlas structure is associated with a plan category
         if isfield(atlas{j}, 'category')
+            
             % Run atlas include REGEXP against structure name
             in = regexpi(structures{i}.name,atlas{j}.include);
             
             % If the atlas structure has an exclude statement as well
             if isfield(atlas{j}, 'exclude') 
+                
                 % Run atlas exclude REGEXP against structure name
                 ex = regexpi(structures{i}.name,atlas{j}.exclude);
             else
+                
                 % Otherwise, return zero matches (empty array)
                 ex = [];
             end
             
             % If the include matched at least once and the exclude didn't
             if size(in,1) > 0 && size(ex,1) == 0
+                
                 % Loop through atlas categories
                 for k = 1:size(atlas{j}.category,2)
+                    
                     % Add the category to the list of matched categories
                     matches{size(matches,2)+1} = atlas{j}.category{k};
                 end
@@ -77,6 +84,7 @@ clear i j k;
 
 % If at least one matching atlas structure with a category was found
 if size(matches,2) > 0
+    
     % Determine frequency of unique values in matches cell array
     [C,~,ic] = unique(matches);
     

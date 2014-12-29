@@ -57,6 +57,7 @@ nodeList = expression.evaluate(doc, XPathConstants.NODESET);
 
 % Loop through the results
 for i = 1:nodeList.getLength
+    
     % Set a handle to the current result
     node = nodeList.item(i-1);
 
@@ -139,6 +140,7 @@ for i = 1:nodeList.getLength
         
         % Loop through the images
         for j = 1:subnodeList.getLength
+            
             % Retrieve handle to this image
             subnode = subnodeList.item(j-1);
 
@@ -340,6 +342,5 @@ Event(sprintf(['Reference binary image loaded successfully in %0.3f ', ...
 
 % Catch errors, log, and rethrow
 catch err
-    % Log error via Event.m
     Event(getReport(err, 'extended', 'hyperlinks', 'off'), 'ERROR');
 end
