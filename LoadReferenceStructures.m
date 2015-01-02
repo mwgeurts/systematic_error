@@ -1,4 +1,4 @@
-function structures = LoadReferenceStructures(path, name, image, atlas)
+function structures = LoadReferenceStructures(varargin)
 % LoadReferenceStructures loads transverse reference structure sets given
 % a reference image UID and creates mask arrays for each structure.  Voxels
 % will be 1 if they are included in the structure and 0 if not.  Currently
@@ -6,13 +6,14 @@ function structures = LoadReferenceStructures(path, name, image, atlas)
 % been validated for version 4.X and 5.X patient archives.
 %
 % The following variables are required for proper execution: 
-%   path: path to the patient archive XML file
-%   name: name of patient XML file in path
-%   image: structure of reference image.  Must include a structureSetUID
-%       field referencing structure set, as well as dimensions, width, and 
-%       start fields
-%   atlas: cell array of atlas names, include/exclude regex statements, and
-%       load flags (if zero, matched structures will not be loaded)
+%   varargin{1}: path to the patient archive XML file
+%   varargin{2}: name of patient XML file in path
+%   varargin{3}: structure of reference image.  Must include a 
+%       structureSetUID field referencing structure set, as well as 
+%       dimensions, width, and start fields
+%   varargin{4} (optional): cell array of atlas names, include/exclude 
+%       regex statements, and load flags (if zero, matched structures will 
+%       not be loaded). If not provided, all structures will be loaded
 %
 % The following variables are returned upon succesful completion:
 %   structures: cell array of structure names, color, and 3D mask array of
@@ -38,15 +39,15 @@ function structures = LoadReferenceStructures(path, name, image, atlas)
 try  
     
 % Log start of plan load and start timer
-Event(sprintf('Generating structure masks from %s for %s', name, ...
-    image.structureSetUID));
+Event(sprintf('Generating structure masks from %s for %s', varargin{2}, ...
+    varargin{3}.structureSetUID));
 tic;
 
 % The patient XML is parsed using xpath class
 import javax.xml.xpath.*
 
 % Read in the patient XML and store the Document Object Model node to doc
-doc = xmlread(fullfile(path, name));
+doc = xmlread(fullfile(varargin{1}, varargin{2}));
 
 % Initialize a new xpath instance to the variable factory
 factory = XPathFactory.newInstance;
@@ -84,7 +85,7 @@ for i = 1:nodeList.getLength
 
     % If this parentUID does not equal the structure set UID, continue
     if ~strcmp(char(subnode.getFirstChild.getNodeValue), ...
-            image.structureSetUID)
+            varargin{3}.structureSetUID)
         continue
     end
     
@@ -107,29 +108,34 @@ for i = 1:nodeList.getLength
     load = true;
     
     %% Compare name to atlas
-    % Loop through each atlas structure
-    for j = 1:size(atlas, 2)
-        
-        % Compute the number of include atlas REGEXP matches
-        in = regexpi(name, atlas{j}.include);
-        
-        % If the atlas structure also contains an exclude REGEXP
-        if isfield(atlas{j}, 'exclude') 
-            % Compute the number of exclude atlas REGEXP matches
-            ex = regexpi(name, atlas{j}.exclude);
-        else
-            % Otherwise, return 0 exclusion matches
-            ex = [];
-        end
-        
-        % If the structure matched the include REGEXP and not the
-        % exclude REGEXP (if it exists)
-        if size(in,1) > 0 && size(ex,1) == 0
-            % Set the load flag based on the matched atlas structure
-            load = atlas{j}.load;
-            
-            % Stop the atlas for loop, as the structure was matched
-            break;
+    if nargin == 4
+    
+        % Loop through each atlas structure
+        for j = 1:size(varargin{4}, 2)
+
+            % Compute the number of include atlas REGEXP matches
+            in = regexpi(name,varargin{4}{j}.include);
+
+            % If the atlas structure also contains an exclude REGEXP
+            if isfield(varargin{4}{j}, 'exclude') 
+                
+                % Compute the number of exclude atlas REGEXP matches
+                ex = regexpi(name,varargin{4}{j}.exclude);
+            else
+                % Otherwise, return 0 exclusion matches
+                ex = [];
+            end
+
+            % If the structure matched the include REGEXP and not the
+            % exclude REGEXP (if it exists)
+            if size(in,1) > 0 && size(ex,1) == 0
+                
+                % Set the load flag based on the matched atlas structure
+                load = varargin{4}{j}.load;
+
+                % Stop the atlas for loop, as the structure was matched
+                break;
+            end
         end
     end
     
@@ -185,20 +191,6 @@ for i = 1:nodeList.getLength
         structures{n}.color(3) = ...
             str2double(subnode.getFirstChild.getNodeValue);
 
-        %% Load structure UID
-        % Search for structure set UID
-        subexpression = xpath.compile('briefROI/dbInfo/databaseUID');
-        
-        % Evaluate xpath expression and retrieve the results
-        subnodeList = subexpression.evaluate(node, XPathConstants.NODESET);
-        
-        % Store the first returned value
-        subnode = subnodeList.item(0);
-        
-        % Store database UID in return cell array as char
-        structures{n}.structureUID = ...
-            char(subnode.getFirstChild.getNodeValue);
-        
         %% Load density override information
         % Search for structure set density override flag
         subexpression = xpath.compile('briefROI/isDensityOverridden');
@@ -238,7 +230,7 @@ for i = 1:nodeList.getLength
         subnode = subnodeList.item(0);
         
         % Store full file path to return cell array
-        structures{n}.filename = fullfile(path, ...
+        structures{n}.filename = fullfile(varargin{1}, ...
             char(subnode.getFirstChild.getNodeValue));
         
     % Otherwise, the load flag was set to false during atlas matching
@@ -255,14 +247,13 @@ clear i j name load node subnode nodeList subnodeList expression ...
 
 % Log how many structures were discovered
 Event(sprintf('%i structures matched atlas for %s', n, ...
-    image.structureSetUID));
+    varargin{3}.structureSetUID));
 
 % Loop through the structures discovered
 for i = 1:n
-    
     % Generate empty logical mask of the same image size as the reference
     % image (see LoadReferenceImage for more information)
-    structures{i}.mask = false(image.dimensions); 
+    structures{i}.mask = false(varargin{3}.dimensions); 
     
     % Inititalize structure volume
     structures{i}.volume = 0;
@@ -288,8 +279,7 @@ for i = 1:n
     
     % Loop through ROICurves
     for j = 1:nodeList.getLength
-        
-        % Set a handle to the current result
+       % Set a handle to the current result
         subnode = nodeList.item(j-1); 
 
         % Read in the number of points in the curve
@@ -297,28 +287,27 @@ for i = 1:n
         
         % Some curves have zero points, so skip them
         if numpoints > 0
-            
             % Read in curve points
             points = str2num(subnode.getFirstChild.getNodeValue); %#ok<ST2NM>
 
             % Determine slice index by searching IEC-Y index using nearest
             % neighbor interpolation
-            slice = interp1(image.start(3):image.width(3):image.start(3) ...
-                + (image.dimensions(3) - 1) * image.width(3), ...
-                1:image.dimensions(3), points(1,3), 'nearest', 0);
+            slice = interp1(varargin{3}.start(3):varargin{3}.width(3):...
+                varargin{3}.start(3) + (varargin{3}.dimensions(3) - 1) * ...
+                varargin{3}.width(3), 1:varargin{3}.dimensions(3), ...
+                points(1,3), 'nearest', 0);
         
             % If the slice index is within the reference image
             if slice ~= 0
-                
                 % Test if voxel centers are within polygon defined by point 
                 % data, adding result to structure mask.  Note that voxels 
                 % encompassed by even numbers of curves are considered to 
                 % be outside of the structure (ie, rings), as determined 
                 % by the addition test below
-                mask = poly2mask((points(:,2) - image.start(2)) / ...
-                    image.width(2) + 1, (points(:,1) - image.start(1)) / ...
-                    image.width(1)+1, image.dimensions(1), ...
-                    image.dimensions(2));
+                mask = poly2mask((points(:,2) - varargin{3}.start(2)) / ...
+                    varargin{3}.width(2) + 1, (points(:,1) - ...
+                    varargin{3}.start(1)) / varargin{3}.width(1) + 1, ...
+                    varargin{3}.dimensions(1), varargin{3}.dimensions(2));
                 
                 % If the new mask will overlap an existing value, subtract
                 if max(max(mask + structures{i}.mask(:,:,slice))) == 2
@@ -343,11 +332,10 @@ for i = 1:n
     % Compute volumes from mask (note, this will differ from the true
     % volume as partial voxels are not considered
     structures{i}.volume = sum(sum(sum(structures{i}.mask))) * ...
-        prod(image.width);
+        prod(varargin{3}.width);
     
     % Check if at least one voxel in the mask was set to true
     if max(max(max(structures{i}.mask))) == 0
-        
         % If not, warn the user that the mask is empty
         Event(['Structure ', structures{i}.name, ...
             ' is less than one voxel.'], 'WARN');
