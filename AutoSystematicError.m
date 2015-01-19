@@ -105,7 +105,7 @@ dvhDir = '../Study_Results/DVHs/';
 metricDir = '../Study_Results/';
 
 % Set version handle
-version = '1.0.1';
+version = '1.0.2';
 
 % Determine path of current application
 [path, ~, ~] = fileparts(mfilename('fullpath'));
@@ -140,6 +140,61 @@ Event(string, 'INIT');
 
 % Clear temporary variables
 clear string separator;
+
+%% Add Tomo archive extraction tools submodule
+% Add archive extraction tools submodule to search path
+addpath('./tomo_extract');
+
+% Check if MATLAB can find CalcDose.m
+if exist('CalcDose', 'file') ~= 2
+    
+    % If not, throw an error
+    Event(['The Archive Extraction Tools submodule does not exist in the ', ...
+        'search path. Use git clone --recursive or git submodule init ', ...
+        'followed by git submodule update to fetch all submodules'], ...
+        'ERROR');
+end
+
+%% Add DICOM tools submodule
+% Add DICOM tools submodule to search path
+addpath('./dicom_tools');
+
+% Check if MATLAB can find LoadDICOMImages.m
+if exist('LoadDICOMImages', 'file') ~= 2
+    
+    % If not, throw an error
+    Event(['The DICOM Tools submodule does not exist in the ', ...
+        'search path. Use git clone --recursive or git submodule init ', ...
+        'followed by git submodule update to fetch all submodules'], ...
+        'ERROR');
+end
+
+%% Add Structure Atlas submodule
+% Add structure atlas submodule to search path
+addpath('./structure_atlas');
+
+% Check if MATLAB can find LoadDICOMImages.m
+if exist('LoadAtlas', 'file') ~= 2
+    
+    % If not, throw an error
+    Event(['The Structure Atlas submodule does not exist in the ', ...
+        'search path. Use git clone --recursive or git submodule init ', ...
+        'followed by git submodule update to fetch all submodules'], ...
+        'ERROR');
+end
+
+%% Add CalcGamma submodule
+% Add gamma submodule to search path
+addpath('./gamma');
+
+% Check if MATLAB can find CalcGamma.m
+if exist('CalcGamma', 'file') ~= 2
+    
+    % If not, throw an error
+    Event(['The CalcGamma submodule does not exist in the search path. Use ', ...
+        'git clone --recursive or git submodule init followed by git ', ...
+        'submodule update to fetch all submodules'], 'ERROR');
+end
 
 %% Load Results .csv
 % Open file handle to current results .csv set
@@ -196,7 +251,54 @@ end
 % Clear file hande
 clear fid;
 
+%% Verify beam model
+% Declare path to beam model folder
+modeldir = './GPU';
+
+% Check for beam model files
+if exist(fullfile(modeldir, 'dcom.header'), 'file') == 2 && ...
+        exist(fullfile(modeldir, 'fat.img'), 'file') == 2 && ...
+        exist(fullfile(modeldir, 'kernel.img'), 'file') == 2 && ...
+        exist(fullfile(modeldir, 'lft.img'), 'file') == 2 && ...
+        exist(fullfile(modeldir, 'penumbra.img'), 'file') == 2
+
+    % Log name
+    Event('Beam model files verified');
+else
+
+    % Otherwise throw an error
+    Event(sprintf(['Beam model not found. Verify that %s exists and ', ...
+        'contains the necessary model files'], modeldir), 'ERROR');
+end
+
+%% Configure Dose Calculation
+% Check for presence of dose calculator
+calcDose = CalcDose();
+
+% Set sadose flag
+sadose = 0;
+
+% If calc dose was successful and sadose flag is set
+if calcDose == 1 && sadose == 1
+    
+    % Log dose calculation status
+    Event('CPU Dose calculation enabled');
+    
+% If calc dose was successful and sadose flag is not set
+elseif calcDose == 1 && sadose == 0
+    
+    % Log dose calculation status
+    Event('GPU Dose calculation enabled');
+   
+% Otherwise, calc dose was not successful
+else
+    
+    % Log dose calculation status
+    Event('Dose calculation not available', 'ERROR');
+end
+
 %% Load atlas
+% Attempt to load the atlas
 atlas = LoadAtlas('atlas.xml');
 
 %% Load plan modifications
@@ -337,6 +439,7 @@ for i = 1:size(metrics, 1)
         
     % Otherwise, create new results file, saving column headers
     else
+        
         % Log generation of new file
         Event(['Generating new results file ', resultsCSV]);
 
@@ -368,39 +471,6 @@ clear i j;
 
 % Log number of modifications loaded
 Event(sprintf('%i functions successfully loaded', size(metrics, 1)));
-
-%% Load SSH/SCP Scripts
-% A try/catch statement is used in case Ganymed-SSH2 is not available
-try
-    
-    % Load Ganymed-SSH2 javalib
-    Event('Adding Ganymed-SSH2 javalib');
-    addpath('../ssh2_v2_m1_r6/'); 
-    Event('Ganymed-SSH2 javalib added successfully');
-    
-    % Establish connection to computation server.  The ssh2_config
-    % parameters below should be set to the DNS/IP address of the
-    % computation server, user name, and password with SSH/SCP and
-    % read/write access, respectively.  See the README for more infomation
-    Event('Connecting to tomo-research via SSH2');
-    ssh2 = ssh2_config('tomo-research', 'tomo', 'hi-art');
-    
-    % Test the SSH2 connection.  If this fails, catch the error below.
-    [ssh2, ~] = ssh2_command(ssh2, 'ls');
-    Event('SSH2 connection successfully established');
-
-% addpath, ssh2_config, or ssh2_command may all fail if ganymed is not
-% available or if the remote server is not responding
-catch err
-    
-    % Log failure
-    Event(getReport(err, 'extended', 'hyperlinks', 'off'), 'ERROR');
-  
-end
-
-%% Add CalcGamma submodule
-% Add gamma submodule to search path
-addpath('./gamma');
 
 %% Start scanning for archives
 % Note beginning execution
@@ -543,26 +613,23 @@ while i < size(folderList, 1)
                     planTimer = tic;
                     
                     % Load delivery plan
-                    planData = LoadPlan(path, name, approvedPlans{j});
+                    refPlan = LoadPlan(path, name, approvedPlans{j});
                     
                     % Load reference image
-                    referenceImage = ...
-                        LoadReferenceImage(path, name, approvedPlans{j});
+                    refImage = LoadImage(path, name, approvedPlans{j});
                     
                     % Load structures
-                    referenceImage.structures = LoadReferenceStructures(...
-                        path, name, referenceImage, atlas);
+                    refImage.structures = LoadStructures(path, name, ...
+                        refImage, atlas);
                     
                     % Find structure category
-                    category = FindCategory(referenceImage.structures, ...
-                        atlas);
+                    category = FindCategory(refImage.structures, atlas);
                     
                     % Execute CalcDose on reference plan
-                    referenceDose = CalcDose(referenceImage, planData, ...
-                        [0 0 0 0 0 0], ssh2);
+                    refDose = CalcDose(refImage, refPlan, modeldir, sadose);
                     
                     % Write reference DVH to .csv file
-                    WriteDVH(referenceImage, referenceDose, fullfile(...
+                    WriteDVH(refImage, refDose, fullfile(...
                         dvhDir, strcat(approvedPlans{j}, ...
                         '_reference.csv')));
                     
@@ -584,8 +651,8 @@ while i < size(folderList, 1)
                                 
                                 % Execute metric with no additional args
                                 planMetrics(k, 1) = feval(metrics{k,2}, ...
-                                    referenceImage, referenceDose, ...
-                                    referenceDose, atlas);
+                                    refImage, refDose, ...
+                                    refDose, atlas);
                             else
                                 % Split metric arguments using / delimiter
                                 str = strsplit(metrics{k,3}, '/');
@@ -595,19 +662,19 @@ while i < size(folderList, 1)
                                 case 1
                                     % Execute metric with 1 additional arg
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
-                                        referenceImage, referenceDose, ...
-                                        referenceDose, atlas, str(1));
+                                        refImage, refDose, ...
+                                        refDose, atlas, str(1));
                                 case 2
                                     % Execute metric with 2 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
-                                        referenceImage, referenceDose, ...
-                                        referenceDose, atlas, str(1), ...
+                                        refImage, refDose, ...
+                                        refDose, atlas, str(1), ...
                                         str(2));
                                 case 3
                                     % Execute metric with 3 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
-                                        referenceImage, referenceDose, ...
-                                        referenceDose, atlas, str(1), ...
+                                        refImage, refDose, ...
+                                        refDose, atlas, str(1), ...
                                         str(2), str(3));
                                 otherwise
                                     % Otherwise throw an error
@@ -631,7 +698,7 @@ while i < size(folderList, 1)
                         if isempty(modifications{k,3})
                             
                             % Execute modifications with no additional args
-                            modPlan = feval(modifications{k,2}, planData);
+                            modPlan = feval(modifications{k,2}, refPlan);
                             
                         else
                             % Split modifications arguments using / 
@@ -643,15 +710,15 @@ while i < size(folderList, 1)
                             case 1
                                 % Execute metric with 1 additional arg
                                 modPlan = feval(modifications{k,2}, ...
-                                    planData, str(1));
+                                    refPlan, str(1));
                             case 2
                                 % Execute metric with 2 additional args
                                 modPlan = feval(modifications{k,2}, ...
-                                    planData, str(1), str(2));
+                                    refPlan, str(1), str(2));
                             case 3
                                 % Execute metric with 3 additional args
                                 modPlan = feval(modifications{k,2}, ...
-                                    planData, str(1), str(2), str(3));
+                                    refPlan, str(1), str(2), str(3));
                             otherwise
                                 % Otherwise throw an error
                                 Event('Too many arguments for feval', ...
@@ -663,11 +730,11 @@ while i < size(folderList, 1)
                         end
                         
                         % Calculate modified plan dose
-                        modDose = CalcDose(referenceImage, modPlan, ...
-                            [0 0 0 0 0 0], ssh2);
+                        modDose = CalcDose(refImage, modPlan, modeldir, ...
+                            sadose);
                         
                         % Write modified DVH to .csv file
-                        WriteDVH(referenceImage, modDose, fullfile(dvhDir, ...
+                        WriteDVH(refImage, modDose, fullfile(dvhDir, ...
                             strcat(approvedPlans{j}, '_', ...
                             modifications{k,1}, '.csv')));
                         
@@ -686,8 +753,8 @@ while i < size(folderList, 1)
                                     % Execute metric with no additional 
                                     % args
                                     planMetrics(n, k+1) = feval(...
-                                        metrics{n,2}, referenceImage, ...
-                                        referenceDose, modDose, atlas);
+                                        metrics{n,2}, refImage, ...
+                                        refDose, modDose, atlas);
                                 else
                                     % Split metric arguments using / 
                                     % delimiter
@@ -699,22 +766,22 @@ while i < size(folderList, 1)
                                         % Execute metric with 1 additional 
                                         % arg
                                         planMetrics(n, k+1) = feval(...
-                                            metrics{n,2}, referenceImage, ...
-                                            referenceDose, modDose, ...
+                                            metrics{n,2}, refImage, ...
+                                            refDose, modDose, ...
                                             atlas, str(1));
                                     case 2
                                         % Execute metric with 2 additional 
                                         % args
                                         planMetrics(n, k+1) = feval(...
-                                            metrics{n,2}, referenceImage, ...
-                                            referenceDose, modDose, ...
+                                            metrics{n,2}, refImage, ...
+                                            refDose, modDose, ...
                                             atlas, str(1), str(2));
                                     case 3
                                         % Execute metric with 3 additional 
                                         % args
                                         planMetrics(n, k+1) = feval(...
-                                            metrics{n,2}, referenceImage, ...
-                                            referenceDose, modDose, ...
+                                            metrics{n,2}, refImage, ...
+                                            refDose, modDose, ...
                                             atlas, str(1), str(2), str(3));
                                     otherwise
                                         % Otherwise throw an error
@@ -774,7 +841,7 @@ while i < size(folderList, 1)
                     
                     % Write the number of structures in column 5
                     fprintf(fid, '%i,', ...
-                        size(referenceImage.structures, 2));
+                        size(refImage.structures, 2));
                     
                     % Write the number of plan modifications in column 6
                     fprintf(fid, '%i,', size(modifications, 1));
