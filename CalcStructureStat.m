@@ -40,6 +40,7 @@ function metric = CalcStructureStat(image, ~, newDose, atlas, structure, stat)
 % The following variable is returned upon succesful completion:
 %   metric: structure statistic, or -1 if no matching structure was found
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2014 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 

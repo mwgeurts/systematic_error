@@ -13,6 +13,7 @@ function plan = ModifyGantryAngle(plan, degree)
 %   plan: a structure, of the same format as the input delivery plan, with
 %       the modified gantry angle.
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2014 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 

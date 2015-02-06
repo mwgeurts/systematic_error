@@ -65,6 +65,7 @@ function AutoSystematicError()
 %   {3}: Metric for the reference plan dose
 %   {3+n}: Metrics for all n plan modifications
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2014 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 

@@ -27,6 +27,7 @@ function metric = CalcGammaMetric(~, refDose, newDose, ~, percent, dta)
 %   metric: Gamma index pass rate, or percent of voxels less than 1 that
 %       are greater than 20% of the maximum reference dose.
 %
+% Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2014 University of Wisconsin Board of Regents
 %
 % This program is free software: you can redistribute it and/or modify it 
