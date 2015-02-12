@@ -85,6 +85,7 @@ The following plugins are predefined and represent basic modifications to the de
 | ModifyGantryRate | degsec | Modifies the delivery plan to adjust the gantry rate by degsec (in degrees per second).  The gantry start angle is also modified such that the first projection is still delivered at the original angle, even though the gantry period is different. |
 | ModifyJawFront | distance | Modifies the delivery plan to adjust the front jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions.
 | ModifyJawBack | distance | Modifies the delivery plan to adjust the back jaw away from isocenter by distance (in mm), such that positive values increase the effective field width.  For dynamic jaw plans, this distance is applied to all jaw positions. |
+| ModifyIso | distance, direction | Modifies the isocenter position away from its planned value by distance (in mm) along the specified direction (X, Y, or Z) |
 
 ### Adding New Failure Mode Plugins
 
