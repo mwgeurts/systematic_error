@@ -1,13 +1,18 @@
-function plan = ModifyMLCRandom(plan, percent)
+function plan = ModifyMLCRandom(plan, mu, sigma)
 % ModifyMLCRandom is a delivery plan modification plugin for the
 % TomoTherapy FMEA simulation tool.  This plugin adjusts the sinogram
-% by reducing all leaf open times randomly by 0 to twice the input 
-% percentage, such that the average reduction is the input variable.
+% randomly such that the random values follow a Gaussian distribution using
+% the provided mean and standard deviation. Note, the maximum leaf open
+% time is kept constant, as it is assumed that a leaf cannot deliver more
+% than 100%.
 %
 % The following variables are required for proper execution: 
 %   plan: a structure containing the TomoTherapy delivery plan. See
 %       LoadPlan for more information on the structure format.
-%   percent: a number indicating the average percent reduction to apply.
+%   mu: number indicating the average percent reduction or increase to
+%       apply, relative to the maximum LOT
+%   sigma: number indicating the standard deviation of the normalized 
+%       random distribution, given as a percentage of the maximum LOT
 %
 % The following variable is returned upon succesful completion:
 %   plan: a structure, of the same format as the input delivery plan, with
@@ -30,16 +35,27 @@ function plan = ModifyMLCRandom(plan, percent)
 % with this program. If not, see http://www.gnu.org/licenses/.
 
 % If the second variable is not already numeric
-if ~isnumeric(percent)
+if ~isnumeric(mu)
     
     % Parse it as a double
-    percent = str2double(percent);
+    mu = str2double(mu);
+    
+end
+
+% If the third variable is not already numeric
+if ~isnumeric(sigma)
+    
+    % Parse it as a double
+    sigma = str2double(sigma);
     
 end
 
 % Log event
-Event(sprintf('Reducing leaf open times by a random %0.1f%%', percent));
+Event(sprintf(['Adjusting leaf open times using a normalized random ', ...
+    'distribution with mean %0.1f%% and standard deviation %0.1f%%'], ...
+    mu, sigma));
 
 % Edit plan sinogram
-plan.sinogram = plan.sinogram .* ...
-    (1 - (rand(size(plan.sinogram)) * percent/100 * 2));
+plan.sinogram = min(max(plan.sinogram + normrnd(max(max(plan.sinogram)) * ...
+    mu/100, max(max(plan.sinogram)) * sigma/100, size(sinogram,1), ...
+    size(sinogram,2)), max(max(plan.sinogram))), 0);
