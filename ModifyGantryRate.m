@@ -49,14 +49,14 @@ for i = 1:size(plan.events, 1)
     
         % Modify the event value
         plan.events{i,3} = plan.events{i,3} + ...
-            degsec / plan.scale / plan.numFractions;
+            degsec / plan.scale / plan.fractions;
     
     % If the event specifies gantry angle
     elseif strcmp(plan.events{i,2}, 'gantryAngle') 
     
         % Modify the event value
         plan.events{i,3} = mod(plan.events{i,3} - ...
-            degsec / plan.scale / plan.numFractions * plan.startTrim, 360);
+            degsec / plan.scale / plan.fractions * plan.startTrim, 360);
             
     end
 end
