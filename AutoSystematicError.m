@@ -65,6 +65,13 @@ function AutoSystematicError()
 %   {3}: Metric for the reference plan dose
 %   {3+n}: Metrics for all n plan modifications
 %
+% The DICOMDDir contains a folder for each plan (using the plan UID) and
+% contains a full set of DICOM CT images, RT structure set, reference RT
+% Plan and Dose files, and an RT Plan and Dose file for each modification,
+% using the naming format RTPlan_calc.dcm and RTDose_calc.dcm, either 
+% 'reference' or the name of the modification. DICOM export can be disabled 
+% by setting saveDICOM to false.  
+%
 % Author: Mark Geurts, mark.w.geurts@gmail.com
 % Copyright (C) 2014 University of Wisconsin Board of Regents
 %
@@ -92,21 +99,26 @@ anon = false;
 
 % Set the input directory.  This directory will be scanned for patient
 % archives during execution of AutoSystematicError
-inputDir = '/Volumes/Macintosh HD/Users/Shared/Test_Data/';
+inputDir = '../liverpool_plans';
 
 % Set the .csv file where the results summary will be appended
-resultsCSV = '../Study_Results/Results.csv';
+resultsCSV = '../study_results/Results.csv';
 
 % Set the directory where each DVH .csv will be stored. Make sure this
 % directory exists.
-dvhDir = '../Study_Results/DVHs/';
+dvhDir = '../study_results/DVHs/';
+
+% Set the directory where each DICOM object will be stored. Make sure
+% this directory exists, or set saveDICOM flag to false
+DICOMDir = '../study_results/DICOM/';
+saveDICOM = true;
 
 % Set the directory where each metric .csv will be stored. Make sure this
 % directory exists.
-metricDir = '../Study_Results/';
+metricDir = '../study_results/';
 
 % Set version handle
-version = '1.0.2';
+version = '1.1.0';
 
 % Determine path of current application
 [path, ~, ~] = fileparts(mfilename('fullpath'));
@@ -312,8 +324,17 @@ Event('Loading plan modification functions');
 modifications = {
     'mlc32open'     'ModifyMLCLeafOpen' '32'
     'mlc42open'     'ModifyMLCLeafOpen' '42'
-    'mlcrand2pct'   'ModifyMLCRandom'   '2'
-    'mlcrand4pct'   'ModifyMLCRandom'   '4'
+    'mlc52open'     'ModifyMLCLeafOpen' '52'
+    'mlcrand1pct'   'ModifyMLCRandom'   '0/1'
+    'mlcrand2pct'   'ModifyMLCRandom'   '0/2'
+    'mlcrand3pct'   'ModifyMLCRandom'   '0/3'
+    'mlcrand4pct'   'ModifyMLCRandom'   '0/4'
+    'mlcrand4pct'   'ModifyMLCRandom'   '0/5'
+    'mlcrand6pct'   'ModifyMLCRandom'   '0/6'
+    'mlcrand7pct'   'ModifyMLCRandom'   '0/7'
+    'mlcrand8pct'   'ModifyMLCRandom'   '0/8'
+    'mlcrand9pct'   'ModifyMLCRandom'   '0/9'
+    'mlcrand10pct'  'ModifyMLCRandom'   '0/10'
     'couch-5.0pct'  'ModifyCouchSpeed'  '-5.0'
     'couch-4.5pct'  'ModifyCouchSpeed'  '-4.5'
     'couch-4.0pct'  'ModifyCouchSpeed'  '-4.0'
@@ -324,6 +345,10 @@ modifications = {
     'couch-1.5pct'  'ModifyCouchSpeed'  '-1.5'
     'couch-1.0pct'  'ModifyCouchSpeed'  '-1.0'
     'couch-0.5pct'  'ModifyCouchSpeed'  '-0.5'
+    'couch-0.3pct'  'ModifyCouchSpeed'  '-0.3'
+    'couch-0.1pct'  'ModifyCouchSpeed'  '-0.1'
+    'couch+0.1pct'  'ModifyCouchSpeed'  '0.1'
+    'couch+0.3pct'  'ModifyCouchSpeed'  '0.3'
     'couch+0.5pct'  'ModifyCouchSpeed'  '0.5'
     'couch+1.0pct'  'ModifyCouchSpeed'  '1.0'
     'couch+1.5pct'  'ModifyCouchSpeed'  '1.5'
@@ -343,6 +368,10 @@ modifications = {
     'gantry-1.5deg' 'ModifyGantryAngle' '-1.5'
     'gantry-1.0deg' 'ModifyGantryAngle' '-1.0'
     'gantry-0.5deg' 'ModifyGantryAngle' '-0.5'
+    'gantry-0.3deg' 'ModifyGantryAngle' '-0.3'
+    'gantry-0.1deg' 'ModifyGantryAngle' '-0.1'
+    'gantry+0.1deg' 'ModifyGantryAngle' '0.1'
+    'gantry+0.3deg' 'ModifyGantryAngle' '0.3'
     'gantry+0.5deg' 'ModifyGantryAngle' '0.5'
     'gantry+1.0deg' 'ModifyGantryAngle' '1.0'
     'gantry+1.5deg' 'ModifyGantryAngle' '1.5'
@@ -358,6 +387,8 @@ modifications = {
     'gantry-0.6ds'  'ModifyGantryRate'  '-0.6'
     'gantry-0.4ds'  'ModifyGantryRate'  '-0.4'
     'gantry-0.2ds'  'ModifyGantryRate'  '-0.2'
+    'gantry-0.1ds'  'ModifyGantryRate'  '-0.1'
+    'gantry+0.1ds'  'ModifyGantryRate'  '0.1'
     'gantry+0.2ds'  'ModifyGantryRate'  '0.2'
     'gantry+0.4ds'  'ModifyGantryRate'  '0.4'
     'gantry+0.6ds'  'ModifyGantryRate'  '0.6'
@@ -367,6 +398,10 @@ modifications = {
     'jawf-1.5mm'    'ModifyJawFront'    '-1.5'
     'jawf-1.0mm'    'ModifyJawFront'    '-1.0'
     'jawf-0.5mm'    'ModifyJawFront'    '-0.5'
+    'jawf-0.3mm'    'ModifyJawFront'    '-0.3'
+    'jawf-0.1mm'    'ModifyJawFront'    '-0.1'
+    'jawf+0.1mm'    'ModifyJawFront'    '0.1'
+    'jawf+0.3mm'    'ModifyJawFront'    '0.3'
     'jawf+0.5mm'    'ModifyJawFront'    '0.5'
     'jawf+1.0mm'    'ModifyJawFront'    '1.0'
     'jawf+1.5mm'    'ModifyJawFront'    '1.5'
@@ -375,6 +410,10 @@ modifications = {
     'jawb-1.5mm'    'ModifyJawBack'     '-1.5'
     'jawb-1.0mm'    'ModifyJawBack'     '-1.0'
     'jawb-0.5mm'    'ModifyJawBack'     '-0.5'
+    'jawb-0.3mm'    'ModifyJawBack'     '-0.3'
+    'jawb-0.1mm'    'ModifyJawBack'     '-0.1'
+    'jawb+0.1mm'    'ModifyJawBack'     '0.1'
+    'jawb+0.3mm'    'ModifyJawBack'     '0.3'
     'jawb+0.5mm'    'ModifyJawBack'     '0.5'
     'jawb+1.0mm'    'ModifyJawBack'     '1.0'
     'jawb+1.5mm'    'ModifyJawBack'     '1.5'
@@ -409,8 +448,9 @@ Event('Loading plan metric functions');
 % arguments can be separated by a forward slash (/). If the atlas
 % category is empty, all categories will be calculated
 metrics = {
-    'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
+%    'gamma2pct1mm'  'CalcGammaMetric'   '2/1'           ''
     'cordmax'       'CalcStructureStat' 'Cord/Max'      'HeadNeck'
+    'brainstemmax'  'CalcStructureStat' 'Brainstem/Max' 'HeadNeck'
     'parotidmean'   'CalcStructureStat' 'Parotid/Mean'  'HeadNeck'
     'targetdx95'    'CalcStructureStat' 'PTV/D95'       ''
 };
@@ -634,6 +674,49 @@ while i < size(folderList, 1)
                         dvhDir, strcat(approvedPlans{j}, ...
                         '_reference.csv')));
                     
+                    % If DICOM flag is set, save DICOM images
+                    if saveDICOM
+
+                        % Make CT folder unless it already exists
+                        if ~isdir(fullfile(DICOMDir, approvedPlans{j}))
+                            mkdir(fullfile(DICOMDir, approvedPlans{j}));
+                        end 
+
+                        % Store series and study descriptions
+                        refPlan.seriesDescription = 'reference';
+                        refPlan.studyDescription = refPlan.planLabel;
+
+                        % Store patient position from image
+                        refPlan.position = refImage.position;
+
+                        % Generate study and series UIDs
+                        refPlan.studyUID = dicomuid;
+                        refPlan.seriesUID = dicomuid;
+
+                        % Generate unique FOR instance UID
+                        refPlan.frameRefUID = dicomuid; 
+
+                        % Write images to file, storing image UIDs
+                        refPlan.instanceUIDs = WriteDICOMImage(refImage, ...
+                            fullfile(DICOMDir, approvedPlans{j}, 'CT'), ...
+                            refPlan);
+                        
+                        % Write structure set to file, storing UID
+                        refPlan.structureSetUID = WriteDICOMStructures(...
+                            refImage.structures, fullfile(DICOMDir, ...
+                            approvedPlans{j}, 'RTStruct.dcm'), refPlan);
+                        
+                        % Write RT plan to file, storing UID
+                        refPlan.planUID = WriteDICOMTomoPlan(refPlan, ...
+                            fullfile(DICOMDir, approvedPlans{j}, ...
+                            'RTPlan_reference.dcm'));
+                        
+                        % Write dose to file
+                        WriteDICOMDose(refDose, fullfile(DICOMDir, ...
+                            approvedPlans{j}, 'RTDose_reference.dcm'), ...
+                            refPlan);
+                    end
+                    
                     % Initialize 2D plan metrics storage array (initialize
                     % with -1)
                     planMetrics = zeros(size(metrics,1), ...
@@ -660,24 +743,29 @@ while i < size(folderList, 1)
                                 
                                 % Switch on number of input arguments
                                 switch length(str)
+                                    
                                 case 1
+                                    
                                     % Execute metric with 1 additional arg
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         refImage, refDose, ...
                                         refDose, atlas, str(1));
                                 case 2
+                                    
                                     % Execute metric with 2 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         refImage, refDose, ...
                                         refDose, atlas, str(1), ...
                                         str(2));
                                 case 3
+                                    
                                     % Execute metric with 3 additional args
                                     planMetrics(k, 1) = feval(metrics{k,2}, ...
                                         refImage, refDose, ...
                                         refDose, atlas, str(1), ...
                                         str(2), str(3));
-                                otherwise
+                                    otherwise
+                                    
                                     % Otherwise throw an error
                                     Event('Too many arguments for feval', ...
                                         'ERROR');
@@ -708,19 +796,24 @@ while i < size(folderList, 1)
                             
                             % Switch on number of input arguments
                             switch length(str)
+                                
                             case 1
+                                
                                 % Execute metric with 1 additional arg
                                 modPlan = feval(modifications{k,2}, ...
                                     refPlan, str(1));
                             case 2
+                                
                                 % Execute metric with 2 additional args
                                 modPlan = feval(modifications{k,2}, ...
                                     refPlan, str(1), str(2));
                             case 3
+                                
                                 % Execute metric with 3 additional args
                                 modPlan = feval(modifications{k,2}, ...
                                     refPlan, str(1), str(2), str(3));
-                            otherwise
+                                otherwise
+                                
                                 % Otherwise throw an error
                                 Event('Too many arguments for feval', ...
                                     'ERROR');
@@ -738,6 +831,41 @@ while i < size(folderList, 1)
                         WriteDVH(refImage, modDose, fullfile(dvhDir, ...
                             strcat(approvedPlans{j}, '_', ...
                             modifications{k,1}, '.csv')));
+                        
+                        % If DICOM flag is set, save DICOM images
+                        if saveDICOM
+                            
+                            % Store series and study descriptions
+                            modPlan.seriesDescription = modifications{k,1};
+                            modPlan.studyDescription = refPlan.planLabel;
+                            
+                            % Store patient position from image
+                            modPlan.position = refPlan.position;
+
+                            % USe same study and series UIDs
+                            modPlan.studyUID = refPlan.studyUID;
+                            modPlan.seriesUID = refPlan.seriesUID;
+
+                            % Use same FOR instance UID
+                            modPlan.frameRefUID = refPlan.frameRefUID;
+                            
+                            % Store image UIDs from refPlan
+                           	modPlan.instanceUIDs = refPlan.instanceUIDs;
+                            
+                            % Store structure set UID from refPlan
+                            modPlan.structureSetUID = ...
+                                refPlan.structureSetUID;
+                            
+                            % Write RT plan to file, storing UID
+                            modPlan.planUID = WriteDICOMTomoPlan(modPlan, ...
+                                fullfile(DICOMDir, approvedPlans{j}, ...
+                                ['RTPlan_', modifications{k,1}, '.dcm']));
+                            
+                            % Write dose to file
+                            WriteDICOMDose(modDose, fullfile(DICOMDir, ...
+                                approvedPlans{j}, ['RTDose_', ...
+                                modifications{k,1}, '.dcm']), modPlan);
+                        end
                         
                         % Loop through plan metrics, computing modified 
                         % value
@@ -868,14 +996,16 @@ while i < size(folderList, 1)
                 % If an error is thrown, catch
                 catch exception
                     
-                    % Report exception to error log
-                    Event(getReport(exception, 'extended', 'hyperlinks', ...
-                        'off'), 'CATCH');
-                   
-                    % Continue to next image set
-                    continue;
+                      rethrow(exception);
+%                     % Report exception to error log
+%                     Event(getReport(exception, 'extended', 'hyperlinks', ...
+%                         'off'), 'CATCH');
+%                    
+%                     % Continue to next image set
+%                     continue;
                 end
             else
+                
                 % Otherwise, matching data was found in resultsCSV
                 Event(['UID ', approvedPlans{j}, ...
                     ' skipped as results were found in ', resultsCSV]);
