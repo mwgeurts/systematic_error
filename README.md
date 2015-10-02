@@ -13,7 +13,7 @@ This application can be installed by cloning this git repository.  See [Installa
 
 ## Usage and Documentation
 
-Please see the [wiki](../../wiki) for basic usage and other documentation on using the TomoTherapy FMEA Tool.
+Please see the [wiki](../../wiki) for basic usage and other documentation on using the TomoTherapy FMEA Simulation Tool.
 
 ## License
 
