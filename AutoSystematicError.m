@@ -682,6 +682,18 @@ while i < size(folderList, 1)
                             mkdir(fullfile(DICOMDir, approvedPlans{j}));
                         end 
 
+                        % If anon is TRUE, alter the patient's identifying
+                        % fields
+                        if anon
+                            refPlan.patientName = ...
+                                ['ANON', sprintf('%i', floor(rand()*100000))];
+                            refPlan.patientID = ...
+                                sprintf('%i', floor(rand()*100000000));
+                            refPlan.patientBirthDate = '';
+                            refPlan.patientSex = '';
+                            refPlan.patientAge = '';
+                        end
+                        
                         % Store series and study descriptions
                         refPlan.seriesDescription = 'reference';
                         refPlan.studyDescription = refPlan.planLabel;
@@ -951,9 +963,11 @@ while i < size(folderList, 1)
                     % If anon is TRUE, do not store the XML name and 
                     % location in column 1
                     if anon
+                        
                         % Instead, replace with 'ANON'
                         fprintf(fid,'ANON,'); %#ok<*UNRCH>
                     else
+                        
                         % Otherwise, write relative path location 
                         fprintf(fid, '%s,', ...
                             strrep(folderList(i).name, ',', ''));
@@ -996,13 +1010,12 @@ while i < size(folderList, 1)
                 % If an error is thrown, catch
                 catch exception
                     
-                      rethrow(exception);
-%                     % Report exception to error log
-%                     Event(getReport(exception, 'extended', 'hyperlinks', ...
-%                         'off'), 'CATCH');
-%                    
-%                     % Continue to next image set
-%                     continue;
+                    % Report exception to error log
+                    Event(getReport(exception, 'extended', 'hyperlinks', ...
+                        'off'), 'CATCH');
+                   
+                    % Continue to next image set
+                    continue;
                 end
             else
                 
