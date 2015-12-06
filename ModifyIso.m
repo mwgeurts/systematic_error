@@ -1,15 +1,16 @@
-function plan = ModifyIso(plan, distance, direction)
+function plan = ModifyIso(plan, varargin)
 % ModifyIso is a delivery plan modification plugin for the TomoTherapy FMEA 
 % simulation tool.  This plugin adjusts the isocenter position by a given 
 % absolute distance, in mm, along the direction (X, Y, or Z), where X,Y,Z 
-% refer to the dose calculation coordinate system.
+% refer to the dose calculation coordinate system. Movement in multiple
+% directions is possible by supplying more than three input arguments.
 %
 % The following variables are required for proper execution: 
 %   plan: a structure containing the TomoTherapy delivery plan. See
 %       LoadPlan for more information on the structure format.
-%   distance: a number (or string) indicating the deviation in isocenter
-%       position, in mm.
-%   direction: 'X', 'Y', or 'Z' indicating the direction to apply the
+%   varargin{odd}: a number (or string) indicating the deviation in 
+%       isocenter position, in mm.
+%   varargin{even}: 'X', 'Y', or 'Z' indicating the direction to apply the
 %       adjustment.
 %
 % The following variable is returned upon succesful completion:
@@ -32,25 +33,29 @@ function plan = ModifyIso(plan, distance, direction)
 % You should have received a copy of the GNU General Public License along 
 % with this program. If not, see http://www.gnu.org/licenses/.
 
-% If the second variable is not already numeric
-if ~isnumeric(distance)
-    
-    % Parse it as a double
-    distance = str2double(distance);
-    
-end
+% Loop through the distance arguments
+for i = 1:2:nargin-1
 
-% Log event
-Event(sprintf('Adjusting iso%s %0.2f mm', direction, distance));
+    % If the second variable is not already numeric
+    if ~isnumeric(varargin{i})
 
-% Loop through delivery plan events
-for i = 1:size(plan.events, 1)
+        % Parse it as a double
+        varargin{i} = str2double(varargin{i});
+
+    end
     
-    % If the event specifies front jaw
-    if strcmp(plan.events{i,2}, ['iso', direction]) 
-    
-        % Modify the event value
-        plan.events{i,3} = plan.events{i,3} + distance / 10;
-        
+    % Log event
+    Event(sprintf('Adjusting iso%s %0.2f mm', varargin{i+1}, varargin{i}));
+
+    % Loop through delivery plan events
+    for j = 1:size(plan.events, 1)
+
+        % If the event specifies front jaw
+        if strcmp(plan.events{j,2}, ['iso', varargin{i+1}]) 
+
+            % Modify the event value
+            plan.events{j,3} = plan.events{j,3} + varargin{i} / 10;
+
+        end
     end
 end
