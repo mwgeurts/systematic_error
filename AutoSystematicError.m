@@ -824,7 +824,29 @@ while i < size(folderList, 1)
                                 % Execute metric with 3 additional args
                                 modPlan = feval(modifications{k,2}, ...
                                     refPlan, str(1), str(2), str(3));
-                                otherwise
+                            
+                            case 4
+                                
+                                % Execute metric with 4 additional args
+                                modPlan = feval(modifications{k,2}, ...
+                                    refPlan, str(1), str(2), str(3), ...
+                                    str(4));
+                            
+                            case 5
+                                
+                                % Execute metric with 5 additional args
+                                modPlan = feval(modifications{k,2}, ...
+                                    refPlan, str(1), str(2), str(3), ...
+                                    str(4), str(5));
+                                
+                            case 6
+                                
+                                % Execute metric with 6 additional args
+                                modPlan = feval(modifications{k,2}, ...
+                                    refPlan, str(1), str(2), str(3), ...
+                                    str(4), str(5), str(6));
+                                
+                            otherwise
                                 
                                 % Otherwise throw an error
                                 Event('Too many arguments for feval', ...
