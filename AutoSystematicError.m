@@ -98,8 +98,11 @@ warning('off','all');
 anon = false;
 
 % Set the input directory.  This directory will be scanned for patient
-% archives during execution of AutoSystematicError
-inputDir = '../liverpool_plans';
+% archives during execution of AutoSystematicError. If loadDICOM is set to
+% true, any DICOM RT structure set files found in the patient archives will 
+% be appended to the plan structure set list
+inputDir = '../study_plans';
+loadDICOM = false;
 
 % Set the .csv file where the results summary will be appended
 resultsCSV = '../study_results/Results.csv';
@@ -118,7 +121,7 @@ saveDICOM = true;
 metricDir = '../study_results/';
 
 % Set version handle
-version = '1.1.0';
+version = '1.2.0';
 
 % Determine path of current application
 [path, ~, ~] = fileparts(mfilename('fullpath'));
@@ -662,6 +665,42 @@ while i < size(folderList, 1)
                     % Load structures
                     refImage.structures = LoadStructures(path, name, ...
                         refImage, atlas);
+                    
+                    % If loadDICOM is set to true, look for DICOM RTSS
+                    if loadDICOM
+                       
+                        % Retrieve the archive folder contents
+                        subFolderList = dir(path);
+                        
+                        % Loop through folder
+                        for k = 1:size(subFolderList, 1)
+        
+                            % If file ends in .dcm, check if it is a DICOM
+                            % RT structure set 
+                            if size(strfind(subFolderList(k).name, ...
+                                    '.dcm'), 1) > 0
+                        
+                                % Log event
+                                Event(['Found DICOM file ', ...
+                                    subFolderList(k).name, ...
+                                    ', will now check contents']);
+                                
+                                % Execute LoadDICOMStructures
+                                DICOMstructures = LoadDICOMStructures(path, ...
+                                    subFolderList(k).name, refImage, atlas);
+                                
+                                % Append structures
+                                for l = 1:length(DICOMstructures)
+                                    refImage.structures{length(...
+                                        refImage.structures)+1} = ...
+                                        DICOMstructures{l};
+                                end
+                            end
+                        end
+                        
+                        % Clear temporary variables
+                        clear subFolderList k l DICOMstructures;
+                    end
                     
                     % Find structure category
                     category = FindCategory(refImage.structures, atlas);
